@@ -1,0 +1,151 @@
+{
+  "$id": "https://fullmeta.local/applications/raytrace/raytrace.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "application": "raytrace",
+  "title": "Ray Tracing",
+  "description": "2D geometric ray tracing through sequential refracting surfaces (lenses).",
+  "type": "object",
+  "x-fullmeta-schema": "../../platform/schemas/schema-editor.schema.json",
+  "x-fullmeta-ui-editor": { "widget": "modelEditor" },
+  "required": ["application", "modelFormat", "x-fullmeta-schema", "metadata", "model"],
+  "x-fullmeta-runtime": {
+    "$schema": "../../platform/schemas/fullmeta-model-runtime-1.schema.json",
+    "schema": "fullmeta-model-runtime/1",
+    "storage": {
+      "modelFile": "raytrace_model.json",
+      "projectRootFolder": "projects",
+      "runsDirectory": "raytrace_runs",
+      "resultsDirectory": "raytrace_results"
+    },
+    "externalPrograms": {
+      "raytraceSolver": {
+        "executable": ".runtime/raytrace2d.exe",
+        "pathType": "relative",
+        "allowedEntries": ["--trace"]
+      }
+    },
+    "editorApi": {
+      "projectCreate": {
+        "route": "/api/project/create",
+        "method": "POST",
+        "handler": "kernel.workspace.project.create",
+        "input": { "contentType": "application/json", "fields": [["projectId", "New project ID"], ["profileId", "Selected profile"], ["model", "Initial model JSON"]] },
+        "output": { "contentType": "application/json", "fields": [["id", "Created project ID"], ["folder", "Project folder"], ["file", "Model filename"]] }
+      },
+      "traceRun": {
+        "route": "/api/raytrace/trace",
+        "method": "POST",
+        "handler": "kernel.program.json",
+        "externalProgram": { "registryId": "raytraceSolver", "entry": "--trace", "protocol": "json-stdio" },
+        "input": { "contentType": "application/json", "fields": [["model", "Current model JSON"]] },
+        "output": { "contentType": "application/json", "fields": [["result", "Traced ray paths and screen hits"]] }
+      }
+    }
+  },
+  "properties": {
+    "application": { "const": "raytrace", "title": "Application" },
+    "modelFormat": { "const": "raytrace-model/1", "type": "string", "title": "Model format" },
+    "x-fullmeta-schema": { "type": "string", "title": "Schema" },
+    "metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "title": "Model ID" },
+        "name": { "type": "string", "title": "Name", "default": "Ray tracing model" },
+        "description": { "type": "string", "title": "Description", "default": "" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "title": "Model",
+      "required": ["source", "surfaces", "screen", "settings"],
+      "properties": {
+        "source": { "$ref": "#/$defs/source" },
+        "surfaces": {
+          "type": "array",
+          "title": "Surfaces",
+          "description": "Refracting surfaces, ordered left to right along the optical (x) axis.",
+          "items": { "$ref": "#/$defs/surface" },
+          "default": []
+        },
+        "screen": { "$ref": "#/$defs/screen" },
+        "settings": { "$ref": "#/$defs/settings" }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "title": "Light source",
+      "required": ["kind", "x", "y", "angleDeg", "width", "rayCount"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "title": "Source type",
+          "enum": ["collimated", "point"],
+          "default": "collimated",
+          "description": "collimated: parallel beam of the given width. point: rays fan out from (x, y) over the given full angle."
+        },
+        "x": { "type": "number", "title": "Position x (mm)", "default": -20 },
+        "y": { "type": "number", "title": "Position y (mm)", "default": 0 },
+        "angleDeg": { "type": "number", "title": "Beam tilt / fan angle (deg)", "default": 0, "description": "Collimated: tilt of the beam. Point: full fan angle." },
+        "width": { "type": "number", "title": "Beam width (mm)", "default": 16, "minimum": 0 },
+        "rayCount": { "type": "integer", "title": "Number of rays", "default": 11, "minimum": 1, "maximum": 500 }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "title": "Surface",
+      "required": ["id", "name", "x", "radius", "semiAperture", "nAfter"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Surface" },
+        "x": { "type": "number", "title": "Vertex position x (mm)", "default": 0 },
+        "radius": { "type": "number", "title": "Radius of curvature (mm)", "default": 50, "description": "Positive: centre of curvature to the right. 0 = flat surface." },
+        "semiAperture": { "type": "number", "title": "Semi-aperture (mm)", "default": 12, "exclusiveMinimum": 0 },
+        "nAfter": { "type": "number", "title": "Refractive index after surface", "default": 1.5, "minimum": 1 }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "title": "Detector screen",
+      "required": ["x", "height"],
+      "properties": {
+        "x": { "type": "number", "title": "Position x (mm)", "default": 100 },
+        "height": { "type": "number", "title": "Height (mm)", "default": 40, "exclusiveMinimum": 0 }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "title": "Ray settings",
+      "required": ["ambientIndex"],
+      "properties": {
+        "ambientIndex": { "type": "number", "title": "Ambient refractive index", "default": 1.0, "minimum": 1 }
+      }
+    }
+  },
+  "x-fullmeta-ui-tree": {
+    "children": [
+      { "path": ["model", "source"], "role": "objectRoot", "children": [] },
+      { "path": ["model", "surfaces"], "role": "collection" },
+      { "path": ["model", "screen"], "role": "objectRoot", "children": [] },
+      { "path": ["model", "settings"], "role": "objectRoot", "children": [] }
+    ],
+    "actionMenus": [
+      {
+        "entries": [{ "action": "add-surface", "label": "Add Surface" }],
+        "when": { "path": ["model", "surfaces"], "scope": "collection" }
+      }
+    ],
+    "insertions": [
+      {
+        "action": "add-surface",
+        "destination": { "from": "arrayPath", "kind": "array" },
+        "factory": "schemaItemTemplate",
+        "variant": "surface",
+        "when": { "path": ["model", "surfaces"], "scope": "collection" }
+      }
+    ]
+  }
+}

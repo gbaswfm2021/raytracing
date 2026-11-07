@@ -1,0 +1,19 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace-model/1",
+  "x-fullmeta-schema": "../raytrace.schema.json",
+  "metadata": {
+    "id": "template",
+    "name": "2D lens",
+    "description": "Collimated beam through a biconvex lens."
+  },
+  "model": {
+    "source": { "kind": "collimated", "x": -20, "y": 0, "angleDeg": 0, "width": 16, "rayCount": 11 },
+    "surfaces": [
+      { "id": "s1", "name": "Front face", "x": 0, "radius": 50, "semiAperture": 12, "nAfter": 1.5168 },
+      { "id": "s2", "name": "Back face", "x": 6, "radius": -50, "semiAperture": 12, "nAfter": 1.0 }
+    ],
+    "screen": { "x": 52, "height": 30 },
+    "settings": { "ambientIndex": 1.0 }
+  }
+}
