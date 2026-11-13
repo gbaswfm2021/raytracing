@@ -1,0 +1,7 @@
+{
+  "format": "fullmeta-application-runtime-build/1",
+  "targetDirectory": "applications/raytracing/.runtime",
+  "crates": [],
+  "buildTargets": [],
+  "artifacts": {}
+}

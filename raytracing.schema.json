@@ -1,0 +1,199 @@
+{
+  "$id": "https://fullmeta.local/applications/raytracing/raytracing.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "application": "raytracing",
+  "author": "Armin Hosseinghorbani",
+  "description": "Trace parallel rays through an ideal thin lens.",
+  "properties": {
+    "application": {
+      "const": "raytracing",
+      "title": "Application"
+    },
+    "format": {
+      "const": "fullmeta-raytracing/1",
+      "type": "string"
+    },
+    "metadata": {
+      "properties": {
+        "id": {
+          "default": "raytracing-project",
+          "title": "ID",
+          "type": "string"
+        },
+        "name": {
+          "default": "Lens example",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Project",
+      "type": "object"
+    },
+    "model": {
+      "properties": {
+        "camera": {
+          "properties": {
+            "zMm": {
+              "default": 40,
+              "title": "Position z (mm)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "zMm"
+          ],
+          "title": "Camera",
+          "type": "object"
+        },
+        "lens": {
+          "properties": {
+            "focalLengthMm": {
+              "default": 30,
+              "exclusiveMinimum": 0,
+              "title": "Focal length (mm)",
+              "type": "number"
+            },
+            "radiusMm": {
+              "default": 2,
+              "exclusiveMinimum": 0,
+              "title": "Aperture radius (mm)",
+              "type": "number"
+            },
+            "zMm": {
+              "default": 10,
+              "title": "Position z (mm)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "zMm",
+            "radiusMm",
+            "focalLengthMm"
+          ],
+          "title": "Lens",
+          "type": "object"
+        },
+        "source": {
+          "properties": {
+            "radiusMm": {
+              "default": 1,
+              "exclusiveMinimum": 0,
+              "title": "Radius (mm)",
+              "type": "number"
+            },
+            "samplesPerAxis": {
+              "default": 5,
+              "maximum": 101,
+              "minimum": 1,
+              "title": "Samples per axis",
+              "type": "integer"
+            },
+            "zMm": {
+              "default": 0,
+              "title": "Position z (mm)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "zMm",
+            "radiusMm",
+            "samplesPerAxis"
+          ],
+          "title": "Source",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source",
+        "lens",
+        "camera"
+      ],
+      "title": "Model",
+      "type": "object"
+    },
+    "raytracingResult": {
+      "title": "Saved ray result",
+      "type": "object"
+    },
+    "x-fullmeta-schema": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "application",
+    "x-fullmeta-schema",
+    "format",
+    "metadata",
+    "model"
+  ],
+  "title": "Raytracing",
+  "type": "object",
+  "x-fullmeta-runtime": {
+    "schema": "fullmeta-model-runtime/1",
+    "storage": {
+      "modelFile": "raytracing.json",
+      "projectRootFolder": "projects",
+      "resultsDirectory": "results",
+      "runsDirectory": "raytracing_runs"
+    }
+  },
+  "x-fullmeta-schema": "../../platform/schema-editor/schema-editor.schema.json",
+  "x-fullmeta-ui-editor": {
+    "widget": "modelEditor"
+  },
+  "x-fullmeta-ui-modelEditor": {
+    "panels": [
+      {
+        "heading": "Ray tracing study",
+        "note": "Trace rays from the source to the camera.",
+        "selector": "#raytracing-study-panel",
+        "when": {
+          "path": [
+            "model"
+          ]
+        }
+      }
+    ],
+    "schema": "fullmeta-model-editor-ui/1"
+  },
+  "x-fullmeta-ui-tree": {
+    "children": [
+      {
+        "path": [
+          "model",
+          "source"
+        ],
+        "role": "objectRoot",
+        "title": "Source"
+      },
+      {
+        "path": [
+          "model",
+          "lens"
+        ],
+        "role": "objectRoot",
+        "title": "Lens"
+      },
+      {
+        "path": [
+          "model",
+          "camera"
+        ],
+        "role": "objectRoot",
+        "title": "Camera"
+      },
+      {
+        "path": [
+          "model"
+        ],
+        "role": "objectRoot",
+        "title": "Study"
+      }
+    ]
+  }
+}

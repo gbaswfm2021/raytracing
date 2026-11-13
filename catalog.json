@@ -1,0 +1,11 @@
+{
+  "description": "Trace and inspect rays through an ideal thin lens.",
+  "format": "fullmeta-application/1",
+  "id": "raytracing",
+  "name": "Raytracing",
+  "version": "1.0.0",
+  "schema": "applications/raytracing/raytracing.schema.json",
+  "runtimePackage": true,
+  "schemaLoader": "applications/raytracing/schema-documents.js",
+  "package": "applications/raytracing/package.js"
+}
