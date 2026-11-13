@@ -1,0 +1,7 @@
+# User interface
+
+Use the shared Model Editor. Under the project root show **Source**, **Lens**, **Camera** and **Study** rows, bound respectively to `/model/source`, `/model/lens`, `/model/camera` and `/model`. Selecting an input row exposes its fields in Settings. Selecting Study exposes **Run Study** and **Clear Results** beside it, plus the 3D scene. Before a run, show the input geometry and a clear no-result message; after a run or project reopen, show the geometry and ray segments, including blocked rays ending at the lens plane. The view must support rotating and zooming the scene.
+
+Draw the source and lens as circles at their positions. Represent the infinite camera plane as a visible square centred on the axis, with side length four times the larger of the source and lens radii; this is only a visual aid and does not limit hits. Distinguish the three objects and rays visually.
+
+Changing an input marks the displayed result stale until rerun. In that state show the geometry from the last successful run with its rays and a visible stale label, so old rays are not mistaken for paths through newly edited geometry. Switching tree selection must not discard the result. When a saved result exists, **Clear Results** is enabled; after confirmation it removes the saved result and displayed rays while keeping the optical inputs. Report invalid input or a failed run in the editor, and retain any previous result marked stale. The camera plane represents the hit plane; a rendered camera image is not required.
