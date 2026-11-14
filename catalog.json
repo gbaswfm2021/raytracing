@@ -1,0 +1,11 @@
+{
+  "format": "fullmeta-application/1",
+  "id": "raytrace",
+  "name": "Ray Tracing",
+  "description": "Optical ray tracing: 2D sequential lens design with full dispersion, and 3D non-sequential illumination tracing.",
+  "version": "0.3.0",
+  "schema": "applications/raytrace/raytrace.schema.json",
+  "runtimePackage": true,
+  "schemaLoader": "applications/raytrace/schema-documents.js",
+  "package": "applications/raytrace/package.js"
+}

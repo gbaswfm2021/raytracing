@@ -9,8 +9,8 @@
 import { traceScene } from "../js/trace3d.js";
 const load = path => { const x = new XMLHttpRequest(); x.open("GET", path, false); x.send(); return JSON.parse(x.responseText); };
 const lines = [];
-for (const [name, path, rays] of [["singlet (split)", "../samples/raytrace3d_singlet/raytrace_model.json", 100000],
-  ["sunlight prism (split)", "../samples/raytrace3d_sunlight_prism/raytrace_model.json", 100000]]) {
+for (const [name, path, rays] of [["singlet (split)", "../examples/raytrace3d_singlet/raytrace_model.json", 100000],
+  ["sunlight prism (split)", "../examples/raytrace3d_sunlight_prism/raytrace_model.json", 100000]]) {
   const model = load(path);
   model.model.sources[0].rayCount = rays;
   const t0 = performance.now();

@@ -7,7 +7,7 @@
 <pre id="summary">running</pre>
 <script type="module">
 const summary = document.getElementById("summary");
-const model = await (await fetch("../samples/raytrace3d_singlet/raytrace_model.json", { cache: "no-store" })).json();
+const model = await (await fetch("../examples/raytrace3d_singlet/raytrace_model.json", { cache: "no-store" })).json();
 const started = performance.now();
 const outcome = await new Promise(resolve => {
   const worker = new Worker(new URL("../js/trace3d-worker.js", import.meta.url), { type: "module" });

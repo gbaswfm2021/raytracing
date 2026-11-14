@@ -7,7 +7,7 @@ const base = new URL("../", import.meta.url);
 const getJson = async path => (await fetch(new URL(path, base), { cache: "no-store" })).json();
 
 export async function runEditorChecks(check) {
-  const doubletPath = "samples/raytrace_achromat_doublet/raytrace_model.json";
+  const doubletPath = "examples/raytrace_achromat_doublet/raytrace_model.json";
   const doublet = await getJson(doubletPath);
   // The sample's schema path is relative to projects/<name>/, so open it from there.
   const modelLocation = new URL(`../../projects/raytrace_achromat_doublet/raytrace_model.json`, base);
@@ -46,14 +46,14 @@ export async function runEditorChecks(check) {
 
   // The editor configures the WASM model contract with the active schema before validating; do the same.
   configureModelSchema(pkg.modelSchema, pkg.schemaDocuments || []);
-  for (const path of [doubletPath, "samples/raytrace_singlet_bk7/raytrace_model.json", "samples/raytrace_biconvex_lens/raytrace_model.json", "templates/lens-2d.json"]) {
+  for (const path of [doubletPath, "examples/raytrace_singlet_bk7/raytrace_model.json", "examples/raytrace_biconvex_lens/raytrace_model.json", "templates/lens-2d.json"]) {
     const issues = await pkg.validateDocument({ value: await getJson(path) });
     const list = Array.isArray(issues) ? issues : issues?.errors || issues?.issues || [];
     check(`schema validation: ${path}`, list.length === 0, { issues: list.slice(0, 5) });
   }
 
   // ---- 3D project (raytrace3d.schema.json) ----
-  const splitter = await getJson("samples/raytrace3d_beam_splitter/raytrace_model.json");
+  const splitter = await getJson("examples/raytrace3d_beam_splitter/raytrace_model.json");
   const pkg3 = await createApplicationPackage({ model: splitter, modelLocation: new URL("../../projects/raytrace3d_beam_splitter/raytrace_model.json", base) });
   check("3D package uses the 3D schema", pkg3.modelSchema.$id.endsWith("raytrace3d.schema.json") && pkg3.launcher.profiles.length === 2, { id: pkg3.modelSchema.$id });
   const plans3 = pkg3.treeActionPlans({ model: splitter, catalogs: pkg3.treeActionCatalogs().catalogs,
@@ -93,8 +93,8 @@ export async function runEditorChecks(check) {
     { modelFormat: created.modelFormat, schema: created["x-fullmeta-schema"] });
 
   configureModelSchema(pkg3.modelSchema, pkg3.schemaDocuments || []);
-  for (const path of ["samples/raytrace3d_singlet/raytrace_model.json", "samples/raytrace3d_parabolic_mirror/raytrace_model.json", "samples/raytrace3d_sunlight_prism/raytrace_model.json",
-    "samples/raytrace3d_beam_splitter/raytrace_model.json", "templates/nonseq-3d.json"]) {
+  for (const path of ["examples/raytrace3d_singlet/raytrace_model.json", "examples/raytrace3d_parabolic_mirror/raytrace_model.json", "examples/raytrace3d_sunlight_prism/raytrace_model.json",
+    "examples/raytrace3d_beam_splitter/raytrace_model.json", "templates/nonseq-3d.json"]) {
     const issues = await pkg3.validateDocument({ value: await getJson(path) });
     const list = Array.isArray(issues) ? issues : issues?.errors || issues?.issues || [];
     check(`schema validation: ${path}`, list.length === 0, { issues: list.slice(0, 5) });

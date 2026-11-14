@@ -16,10 +16,10 @@ const axisCrossing = r => { const p = r.points.at(-1), d = r.finalDir; return p[
 const yAtZ = (r, z) => { const p = r.points.at(-1), d = r.finalDir; return p[1] + (z - p[2]) * d[1] / d[2]; };
 
 export async function runChecks3d(check) {
-  const singlet3d = await getJson("samples/raytrace3d_singlet/raytrace_model.json");
-  const singlet2d = await getJson("samples/raytrace_singlet_bk7/raytrace_model.json");
-  const mirror = await getJson("samples/raytrace3d_parabolic_mirror/raytrace_model.json");
-  const splitter = await getJson("samples/raytrace3d_beam_splitter/raytrace_model.json");
+  const singlet3d = await getJson("examples/raytrace3d_singlet/raytrace_model.json");
+  const singlet2d = await getJson("examples/raytrace_singlet_bk7/raytrace_model.json");
+  const mirror = await getJson("examples/raytrace3d_parabolic_mirror/raytrace_model.json");
+  const splitter = await getJson("examples/raytrace3d_beam_splitter/raytrace_model.json");
 
   // 1. 2D ↔ 3D: the same singlet, meridional rays, screen heights at z = 103 for every wavelength.
   {
@@ -164,7 +164,7 @@ export async function runChecks3d(check) {
 
   // 9. Prism at minimum deviation: δ = 2 asin(n sin(α/2)) − α, symmetric exit, blue deviated more than red.
   {
-    const prismDoc = await getJson("samples/raytrace3d_sunlight_prism/raytrace_model.json");
+    const prismDoc = await getJson("examples/raytrace3d_sunlight_prism/raytrace_model.json");
     const scene = compileScene(prismDoc);
     const src = prismDoc.model.sources[0], d0 = src.direction;
     const glass = prismDoc.model.materials[1];
@@ -190,7 +190,7 @@ export async function runChecks3d(check) {
     const dominant = c => c.indexOf(Math.max(...c));
     check("CIE colour matching → sRGB", Math.abs(y555 - 1) < 0.03 && dominant(blue) === 2 && dominant(green) === 1 && dominant(red) === 0,
       { y555, blue, green, red });
-    const prismDoc = await getJson("samples/raytrace3d_sunlight_prism/raytrace_model.json");
+    const prismDoc = await getJson("examples/raytrace3d_sunlight_prism/raytrace_model.json");
     const a = traceScene(prismDoc, { rayCountCap: 20000 }).analyses[0];
     const [nx, ny] = a.pixels, [u0, u1] = a.extentMm, du = (u1 - u0) / nx;
     let sR = 0, sB = 0, cR = 0, cB = 0;
@@ -211,7 +211,7 @@ export async function runChecks3d(check) {
 
   // 11. 2D spectrum bins: weights are the Planck band integrals (normalised), strongest band is primary.
   {
-    const doc = clone(await getJson("samples/raytrace_singlet_bk7/raytrace_model.json"));
+    const doc = clone(await getJson("examples/raytrace_singlet_bk7/raytrace_model.json"));
     doc.model.source.spectrum = { kind: "blackbody", temperatureK: 5778, minNm: 380, maxNm: 780, bins: 8 };
     const r = traceModel(doc);
     const w = r.wavelengths;

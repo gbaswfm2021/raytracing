@@ -19,12 +19,17 @@ changes**: the kernel launches the solver through the generic `kernel.program.js
 | `solver/RayTrace2D.cs` | Native solver (C#). Reads model JSON on stdin and writes `raytrace-result/2` JSON on stdout |
 | `solver/build.ps1` | Builds `.runtime/raytrace2d.exe` with the csc.exe that ships with Windows |
 | `templates/lens-2d.json` | Starting model for Workspace → Create project (N-BK7 biconvex lens, F/d/C) |
-| `samples/` | Copies of the sample projects (put them in `projects/<name>/` to open them) |
+| `catalog.json` | Application descriptor (`fullmeta-application/1`) that makes FullMeta discover the app |
+| `examples/` | Example projects, offered by the app card's **Examples** button (copied into `projects/<name>/`) |
 | `tests/run.html`, `tests/*.js` | Browser checks: library data, tracer acceptance checks, editor wiring |
 
-Registered in `applications/catalog.json` as `{"id": "raytrace", "runtimePackage": true, ...}`.
+## Install
 
-Samples:
+Copy (or clone) this folder to `applications/raytrace/` in a FullMeta workspace and refresh the launcher. The folder
+name must stay `raytrace` (it must match `id` in `catalog.json`). Use **Examples** on the Ray Tracing card to create
+a project from one of the examples.
+
+Examples:
 - `raytrace_biconvex_lens`: the original `raytrace-model/1` project (kept on /1 to exercise back-compatibility).
 - `raytrace_singlet_bk7`: equiconvex N-BK7 singlet, f ≈ 100 mm, F/d/C.
 - `raytrace_achromat_doublet`: cemented N-BK7 / N-SF11 achromat, f ≈ 100 mm, from the thin-lens achromat equations.
@@ -111,6 +116,7 @@ For headless screenshots of a 3D project use `tests/open-main-thread.html?model=
 The generic schema-project editor (`platform/ui/widgets/model-editor/schema-project-package.js`) has two bugs.
 Both are patched from `package.js`; the platform files are untouched.
 1. Line 138 calls an undefined `isRecord`, so every schema-only project fails with "isRecord is not defined".
+   (Fixed in the Store platform 0.1.1.0; the workaround stays for older installs.)
 2. It returns `uiProfileSchema: {}`, but `runtime.js` `treeUiSetting` reads `uiProfileSchema.properties.behavior...`.
 
 ## Ideas for next steps

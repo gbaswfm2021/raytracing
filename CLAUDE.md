@@ -7,13 +7,26 @@
   simulation platform meant to replace paid tools (COMSOL, Ansys, Zemax-style ray tracing). It started after COMSOL
   quoted us $7000 for an extra module. I'm helping by building new physics modules, starting with **ray tracing**.
 - GitHub user: `arminhgh`. This folder (`applications\raytrace`) is a git repo for my module only
-  (private repo `arminhgh/fullmeta-raytrace`). There's no shared FullMeta repo yet; the plan is for my supervisor to
-  create one (full source + licence) and add me as a collaborator.
+  (private repo `arminhgh/fullmeta-raytrace`).
+- **Supervisor's repos (2026-11-14)**, cloned read-only into `C:\Users\armin\source\fullmeta\`: GitHub org
+  `FullMeta-Project` (public `platform` snapshot = Store package JS + docs; kernel/WASM still compiled only) and private
+  `gbaswfm2021/FullMeta` (workspace root, `applications/inventory.json`), `gbaswfm2021/fem`,
+  `gbaswfm2021/raytracing`. **The `raytracing` repo is only a simple thin-lens demo** the supervisor made to show how an
+  app folder is downloaded and dropped into `applications/`. **He wants this module (`raytrace`) to be the ray-tracing
+  app in FullMeta.** How it gets into `gbaswfm2021/raytracing` / the Help download (id rename? push access?) is still
+  to be agreed with him.
 
-## Setup on this PC (done)
-- FullMeta installed at `C:\Users\armin\AppData\Local\Programs\FullMeta`, served at http://127.0.0.1:8766/
-- This module lives physically in `FullMeta\applications\raytrace\` (required: the kernel refuses links).
-- Sample project: `FullMeta\projects\raytrace_biconvex_lens\` (a copy is kept in `samples\` in this repo).
+## Setup on this PC (since 2026-11-14)
+- FullMeta is the **Microsoft Store app**. Its workspace is `C:\Users\armin\OneDrive\Documents\FullMeta`, served at
+  http://127.0.0.1:8766/ (kernel `--root` is that folder). Platform files live in its `platform\`.
+- **This repo now lives in `OneDrive\Documents\FullMeta\applications\raytrace\`** (cloned from GitHub; the kernel
+  refuses links, so it must physically be there). The old copy in `C:\Users\armin\AppData\Local\Programs\FullMeta`
+  (pre-Store install, no `platform\` any more) is obsolete; don't work there.
+- New app packaging: no central catalog. Each app folder has its own `catalog.json` (`fullmeta-application/1`, folder
+  name = `id`). Examples are discovered from `examples/<name>/*.json` and shown under the app card's **Examples**
+  button, which copies one into `projects/<name>/`.
+- Example projects copied into `projects/`: `raytrace_biconvex_lens`, `raytrace_achromat_doublet`,
+  `raytrace3d_sunlight_prism`.
 - Project folders must sit directly in `projects\<name>\`, never `projects\projects\...`, because model files point
   to their schema with a relative path.
 - The solver exe is a build output, not stored in git. Rebuild it with:
@@ -28,7 +41,7 @@
 
 ## How FullMeta is built (findings)
 - A local Rust **kernel** (`platform/.runtime/native/release/fullmeta-kernel.exe`) serves a browser UI.
-- Applications are plug-ins under `applications/<id>/`, registered in `applications/catalog.json`. Each declares a JSON
+- Applications are plug-ins under `applications/<id>/`, each with its own `catalog.json`. Each declares a JSON
   **schema** (model tree, UI, `x-fullmeta-runtime`: storage, external programs and editor API routes). The kernel runs
   solver exes through **generic handlers** (`kernel.program.json`, `kernel.program.ndjson`, `kernel.command.run`), so
   **new physics modules need no kernel source**.
@@ -53,7 +66,12 @@
   (`templates/lens-2d.json`).
 - `solver/RayTrace2D.cs`: native C# solver, built with the .NET Framework `csc.exe` built into Windows. The old PC had
   no Rust, Python or Node.
-- Registered in `applications/catalog.json` with `"runtimePackage": true`.
+- Registered by its own `catalog.json` (`id: raytrace`, `runtimePackage: true`, version 0.3.0). Example projects in
+  `examples/`.
+- **Verified on the Store platform (2026-11-14):** app card with both profiles and 7 examples; creating projects from
+  examples works; 2D biconvex (best focus 51.901 mm) and 3D sunlight prism (full trace 30,000 rays, energy balance
+  ~1e-13) work in the editor; `tests/run.html` PASS 65/65; no console errors. Not re-tested there: Create Project dialog,
+  native solver (still blocked by Smart App Control).
 - Verified: the app loads, the tree and forms work, live preview updates when you edit, the native solver runs through
   the kernel and matches the preview, and Workspace → Create project works. For the biconvex sample the best focus is
   x = 51.9 mm vs a paraxial back focus of ≈53.4 mm by hand (spherical aberration).
@@ -63,7 +81,8 @@
 - Don't edit `platform\` or `applications\fem\`: a reinstall replaces platform files, and they belong upstream.
 - Two **platform bugs** are worked around in `package.js` (report them to the supervisor):
   1. `platform/ui/widgets/model-editor/schema-project-package.js:138` uses an undefined `isRecord`, so every
-     schema-only project crashes.
+     schema-only project crashes. **Fixed in the Store platform 0.1.1.0**; the workaround is harmless, keep it for
+     older installs.
   2. The generic package returns `uiProfileSchema: {}`, but `runtime.js` `treeUiSetting` reads
      `.properties.behavior...`.
 - Write JSON as UTF-8 **without BOM** (PowerShell 5's `Set-Content -Encoding utf8` adds one).

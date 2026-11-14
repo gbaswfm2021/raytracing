@@ -29,14 +29,14 @@ export async function runChecks() {
   check("Ciddor air nd", Math.abs((nAir - 1) * 1e4 - 2.77) < 0.03, { computed: nAir });
 
   // 2. raytrace-model/1 back-compatibility: the old biconvex sample still traces, same best focus as before.
-  const v1 = await getJson("samples/raytrace_biconvex_lens/raytrace_model.json");
+  const v1 = await getJson("examples/raytrace_biconvex_lens/raytrace_model.json");
   const r1 = traceModel(v1);
   check("v1 sample best focus 51.901 mm", Math.abs(r1.wavelengths[0].stats.bestFocusXmm - 51.901) < 5e-4,
     { bestFocusXmm: r1.wavelengths[0].stats.bestFocusXmm, schema: r1.schema });
 
   // 3. Singlet vs achromatic doublet: F–C paraxial focal shift.
-  const singlet = traceModel(await getJson("samples/raytrace_singlet_bk7/raytrace_model.json"));
-  const doublet = traceModel(await getJson("samples/raytrace_achromat_doublet/raytrace_model.json"));
+  const singlet = traceModel(await getJson("examples/raytrace_singlet_bk7/raytrace_model.json"));
+  const doublet = traceModel(await getJson("examples/raytrace_achromat_doublet/raytrace_model.json"));
   const sShift = singlet.stats.chromaticFocalShiftMm.paraxialFC, dShift = doublet.stats.chromaticFocalShiftMm.paraxialFC;
   // paraxialFocusXmm is a position; back focal distance = focus − last vertex (≈ f minus the principal-plane offset).
   const sBfd = singlet.wavelengths.find(w => w.id === "d").stats.paraxialFocusXmm - 5;
