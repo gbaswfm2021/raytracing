@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Open 3D project (main-thread tracing)</title></head>
+<body>
+<!-- Diagnostic: open a 3D project with tracing on the main thread instead of the background worker.
+     Usage: tests/open-main-thread.html?model=projects%2F<folder>%2Fraytrace_model.json   (add &reset=1 to undo)
+     Meant for headless screenshots in a throwaway browser profile: the flag stays in this browser's localStorage. -->
+<script>
+const params = new URLSearchParams(location.search);
+if (params.get("reset")) localStorage.removeItem("raytraceWorker"); else localStorage.setItem("raytraceWorker", "off");
+location.replace(`/platform/loader.html?model=${encodeURIComponent(params.get("model") || "")}`);
+</script>
+</body>
+</html>

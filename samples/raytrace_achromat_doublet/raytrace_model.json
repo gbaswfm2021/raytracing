@@ -1,0 +1,36 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace-model/2",
+  "x-fullmeta-schema": "../../applications/raytrace/raytrace.schema.json",
+  "metadata": {
+    "id": "raytrace_achromat_doublet",
+    "name": "Achromatic doublet (f ≈ 100 mm)",
+    "description": "Cemented N-BK7 / N-SF11 doublet designed from the thin-lens achromat equations (crown f1 ≈ 60 mm, flint f2 ≈ −150 mm), traced at F, d and C."
+  },
+  "model": {
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0,
+        "reference": "Glass catalogue indices (SCHOTT) are relative to air, so lens design normally treats air as n = 1." },
+      { "id": "N-BK7", "name": "SCHOTT N-BK7", "formula": "sellmeier",
+        "B": [1.03961212, 0.231792344, 1.01046945], "C": [0.00600069867, 0.0200179144, 103.560653],
+        "validRangeUm": [0.3, 2.5], "reference": "SCHOTT optical glass data sheet N-BK7 (nd = 1.51680, vd = 64.17). Relative to air." },
+      { "id": "N-SF11", "name": "SCHOTT N-SF11", "formula": "sellmeier",
+        "B": [1.73759695, 0.313747346, 1.89878101], "C": [0.013188707, 0.0623068142, 155.23629],
+        "validRangeUm": [0.37, 2.5], "reference": "SCHOTT optical glass data sheet N-SF11 (nd = 1.78472, vd = 25.68). Relative to air." }
+    ],
+    "wavelengths": [
+      { "id": "F", "label": "F", "lambdaNm": 486.1327, "weight": 1 },
+      { "id": "d", "label": "d", "lambdaNm": 587.5618, "weight": 1 },
+      { "id": "C", "label": "C", "lambdaNm": 656.2725, "weight": 1 }
+    ],
+    "source": { "kind": "collimated", "x": -20, "y": 0, "angleDeg": 0, "width": 20, "rayCount": 11,
+      "spectrum": { "kind": "wavelengths", "temperatureK": 5778, "minNm": 380, "maxNm": 780, "bins": 16 } },
+    "surfaces": [
+      { "id": "s1", "name": "Crown front", "x": 0, "radius": 62.0, "semiAperture": 12.5, "materialAfter": "N-BK7" },
+      { "id": "s2", "name": "Cemented interface", "x": 6, "radius": -62.0, "semiAperture": 12.5, "materialAfter": "N-SF11" },
+      { "id": "s3", "name": "Flint back", "x": 9, "radius": -131.1, "semiAperture": 12.5, "materialAfter": "air" }
+    ],
+    "screen": { "x": 105.6, "height": 30 },
+    "settings": { "ambientMaterial": "air", "primaryWavelength": "d" }
+  }
+}

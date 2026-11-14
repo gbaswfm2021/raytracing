@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>3D click-to-select check</title></head>
+<body>
+<!-- Loads the 3D singlet in the editor (main-thread tracing), clicks across the 3D view and reports which tree item
+     gets selected. Headless: msedge --headless=new --virtual-time-budget=60000 --dump-dom <this page>.
+     Sets localStorage.raytraceWorker = "off": use a throwaway browser profile. -->
+<pre id="summary">running</pre>
+<iframe id="editor" style="width:1400px;height:900px"></iframe>
+<script>
+localStorage.setItem("raytraceWorker", "off");
+const frame = document.getElementById("editor"), summary = document.getElementById("summary");
+frame.src = "/platform/loader.html?model=" + encodeURIComponent("projects/raytrace3d_singlet/raytrace_model.json");
+frame.onload = () => setTimeout(() => {
+  const doc = frame.contentDocument;
+  const canvas = [...doc.querySelectorAll("canvas")].sort((a, b) => b.clientWidth * b.clientHeight - a.clientWidth * a.clientHeight)[0];
+  if (!canvas) { summary.textContent = "FAIL no canvas"; return; }
+  const rect = canvas.getBoundingClientRect();
+  const results = [];
+  for (let fx = 0.05; fx < 1; fx += 0.03) {
+    const x = rect.left + fx * rect.width, y = rect.top + rect.height / 2;
+    for (const type of ["pointerdown", "pointerup"]) {
+      canvas.dispatchEvent(new frame.contentWindow.PointerEvent(type, { clientX: x, clientY: y, button: 0, bubbles: true, pointerId: 1 }));
+    }
+    const active = doc.querySelector(".tree-item.active");
+    const label = active?.textContent?.trim() || "";
+    if (label && !results.includes(label)) results.push(label);
+  }
+  const picked = results.filter(l => /Singlet|Detector/.test(l));
+  summary.textContent = picked.length ? `PASS selected by clicking: ${picked.join(", ")}` : `FAIL selected: ${results.join(", ") || "nothing"}`;
+}, 20000);
+</script>
+</body>
+</html>

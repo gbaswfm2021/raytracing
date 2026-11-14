@@ -1,0 +1,38 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace3d-model/1",
+  "x-fullmeta-schema": "../../applications/raytrace/raytrace3d.schema.json",
+  "metadata": {
+    "id": "raytrace3d_beam_splitter",
+    "name": "Beam splitter and two detectors",
+    "description": "A thin 50/50 splitter coating (A 2 %, R 49 %, T 49 %) tilted 45° about x sends a Ø10 mm beam to detector A (straight through, +z) and detector B (reflected, +y). Energy check: A = B = 0.49 W, splitter 0.02 W."
+  },
+  "model": {
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0 }
+    ],
+    "wavelengths": [ { "id": "e", "label": "e", "lambdaNm": 546.074, "weight": 1 } ],
+    "surfaceProperties": [
+      { "id": "split", "name": "50/50 coating", "kind": "table", "absorptance": 0.02, "reflectance": 0.49, "transmittance": 0.49 },
+      { "id": "black", "name": "Black paint", "kind": "absorber" }
+    ],
+    "objects": [
+      { "id": "bs", "name": "Splitter", "kind": "plate", "position": [0, 0, 0], "rotationDeg": [45, 0, 0],
+        "surfaceProperty": "split", "plate": { "shape": "rectangle", "width": 25, "height": 25 } },
+      { "id": "detA", "name": "Detector A (transmitted)", "kind": "plate", "position": [0, 0, 50], "rotationDeg": [0, 0, 0],
+        "surfaceProperty": "black", "plate": { "shape": "rectangle", "width": 20, "height": 20 } },
+      { "id": "detB", "name": "Detector B (reflected)", "kind": "plate", "position": [0, 50, 0], "rotationDeg": [90, 0, 0],
+        "surfaceProperty": "black", "plate": { "shape": "rectangle", "width": 20, "height": 20 } }
+    ],
+    "sources": [
+      { "id": "src1", "name": "Collimated beam", "kind": "grid", "position": [0, 0, -40], "direction": [0, 0, 1],
+        "powerW": 1, "rayCount": 10000, "grid": { "shape": "circle", "diameter": 10, "sampling": "random" } }
+    ],
+    "analyses": [
+      { "id": "irrA", "name": "Detector A", "kind": "irradiance", "object": "detA", "face": "front", "pixels": [64, 64] },
+      { "id": "irrB", "name": "Detector B", "kind": "irradiance", "object": "detB", "face": "front", "pixels": [64, 64] }
+    ],
+    "settings": { "ambientMaterial": "air", "rayHandling": "split", "fluxThreshold": 0.0001, "maxIntersections": 200,
+      "randomSeed": 1, "displayRays": 80, "previewRayCap": 2000 }
+  }
+}

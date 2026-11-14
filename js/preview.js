@@ -1,12 +1,14 @@
-// Graphics-pane renderer: optical layout (lens bodies, surfaces, screen) plus traced rays.
+// Graphics-pane renderer: optical layout (lens bodies, surfaces, screen) plus traced rays, coloured by wavelength.
 import { resizeCanvasForDisplay } from "../../../platform/ui/widgets/model-editor/canvas-size.js";
-import { surfacesOf, surfaceSagX, traceModel } from "./trace2d.js";
+import { refractiveIndex } from "./materials.js";
+import { resolveModel, surfaceSagX, traceModel } from "./trace2d.js";
 
 const COLORS = {
-  background: "#0c141e", grid: "#16222f", axis: "#2b3d50", glass: "rgba(110, 180, 255, 0.16)",
-  surface: "#8fc7ff", selected: "#ffd166", screen: "#e26976", text: "#86a4bc",
-  screenRay: "#55cbb7", blocked: "#6b7f93", tir: "#f4a261", missed: "#b08cd8", native: "#ffd166",
+  background: "#0c141e", axis: "#2b3d50", glass: "rgba(110, 180, 255, 0.16)",
+  surface: "#8fc7ff", selected: "#ffd166", screen: "#e26976", text: "#86a4bc", error: "#e26976",
+  blocked: "#6b7f93", native: "#ffd166",
 };
+const fmt = (value, digits) => (Number.isFinite(value) ? value.toFixed(digits) : "–");
 
 function boundsFor(document, surfaces) {
   const m = document?.model || {};
@@ -26,7 +28,18 @@ export function drawRaytracePreview({ previewCanvas, previewContext, model: docu
   ctx.fillStyle = COLORS.background; ctx.fillRect(0, 0, width, height);
   if (!document?.model) return;
 
-  const surfaces = surfacesOf(document);
+  let resolved, live;
+  try {
+    resolved = resolveModel(document);
+    live = traceModel(document);
+  } catch (error) {
+    ctx.fillStyle = COLORS.error; ctx.font = "13px system-ui, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(`Cannot trace: ${error.message}`, width / 2, height / 2, width - 32);
+    return;
+  }
+  const { surfaces, ambient } = resolved;
+  const primary = resolved.wavelengths.find(w => w.id === resolved.primaryId);
+
   const b = boundsFor(document, surfaces);
   const scale = Math.min((width - 40) / (b.xMax - b.xMin), (height - 50) / (b.yMax - b.yMin));
   const ox = 20 + ((width - 40) - scale * (b.xMax - b.xMin)) / 2 - scale * b.xMin;
@@ -37,11 +50,11 @@ export function drawRaytracePreview({ previewCanvas, previewContext, model: docu
   ctx.strokeStyle = COLORS.axis; ctx.setLineDash([6, 4]); ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(X(b.xMin), Y(0)); ctx.lineTo(X(b.xMax), Y(0)); ctx.stroke(); ctx.setLineDash([]);
 
-  // glass between consecutive surfaces where the medium is denser than ambient
-  const ambient = Number(document.model.settings?.ambientIndex) || 1;
+  // glass between consecutive surfaces where the medium (at the primary wavelength) is denser than ambient
+  const nAmbient = refractiveIndex(ambient, primary.lambdaNm);
   for (let i = 0; i < surfaces.length - 1; i++) {
     const a = surfaces[i], c = surfaces[i + 1];
-    if (a.nAfter <= ambient) continue;
+    if (refractiveIndex(a.material, primary.lambdaNm) <= nAmbient) continue;
     const h = Math.min(a.semiAperture, c.semiAperture), steps = 40;
     ctx.beginPath();
     for (let k = 0; k <= steps; k++) { const y = -h + (2 * h * k) / steps; const x = surfaceSagX(a, y) ?? a.x; k ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)); }
@@ -70,17 +83,23 @@ export function drawRaytracePreview({ previewCanvas, previewContext, model: docu
   ctx.strokeStyle = screenSelected ? COLORS.selected : COLORS.screen; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(X(screenX), Y(-half)); ctx.lineTo(X(screenX), Y(half)); ctx.stroke();
 
-  // rays: live browser trace, plus the last native-solver result when it matches this model
-  const live = traceModel(document);
+  // rays: live browser trace coloured by wavelength (blocked / TIR rays dimmed), plus a matching native result dashed.
+  // A selected wavelength in the tree is drawn on top at full strength; the others fade.
+  const colorOf = Object.fromEntries(live.wavelengths.map(w => [w.id, w.color]));
+  const selectedWavelength = selectedPath[1] === "wavelengths" ? document.model.wavelengths?.[Number(selectedPath[2])]?.id : null;
+  const order = [...live.rays].sort((r1, r2) => (r1.wavelength === selectedWavelength) - (r2.wavelength === selectedWavelength));
   ctx.lineWidth = 1;
-  for (const ray of live.rays) {
-    ctx.strokeStyle = COLORS[ray.status === "screen" ? "screenRay" : ray.status] || COLORS.missed;
-    ctx.globalAlpha = 0.9;
+  ctx.globalCompositeOperation = "lighter";   // additive: coincident F/d/C rays add towards white, separated ones show colour
+  for (const ray of order) {
+    const ok = ray.status === "screen";
+    ctx.strokeStyle = ray.status === "blocked" ? COLORS.blocked : colorOf[ray.wavelength] || COLORS.text;
+    ctx.globalAlpha = (selectedWavelength && ray.wavelength !== selectedWavelength ? 0.25 : 0.85) * (ok ? 1 : 0.6);
     ctx.beginPath();
     ray.points.forEach(([x, y], k) => (k ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
   if (nativeResult?.rays) {
     ctx.strokeStyle = COLORS.native; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
     for (const ray of nativeResult.rays) {
@@ -91,19 +110,37 @@ export function drawRaytracePreview({ previewCanvas, previewContext, model: docu
     ctx.setLineDash([]);
   }
 
-  // best-focus marker
-  const focus = live.stats.bestFocusXmm;
-  if (Number.isFinite(focus) && focus > b.xMin && focus < b.xMax) {
-    ctx.fillStyle = COLORS.selected; ctx.beginPath(); ctx.arc(X(focus), Y(live.stats.screenCentroidMm || 0), 3.5, 0, 2 * Math.PI); ctx.fill();
+  // best-focus marker per wavelength
+  for (const w of live.wavelengths) {
+    const focus = w.stats.bestFocusXmm;
+    if (!Number.isFinite(focus) || focus <= b.xMin || focus >= b.xMax) continue;
+    ctx.fillStyle = w.color; ctx.strokeStyle = COLORS.background; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(X(focus), Y(w.stats.screenCentroidMm || 0), 3.5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
   }
 
-  // caption
-  ctx.fillStyle = COLORS.text; ctx.font = "12px system-ui, sans-serif"; ctx.textAlign = "left";
-  const s = live.stats;
-  const parts = [`${s.raysOnScreen}/${s.rayCount} rays on screen`];
-  if (Number.isFinite(s.screenRmsSpotMm)) parts.push(`RMS spot on screen ${s.screenRmsSpotMm.toFixed(4)} mm`);
-  if (Number.isFinite(focus)) parts.push(`best focus x = ${focus.toFixed(3)} mm (RMS ${s.bestFocusRmsMm.toFixed(4)} mm)`);
-  ctx.fillText(parts.join("  ·  "), 12, 18, width - 24);
-  ctx.textAlign = "right";
+  // caption: one line per wavelength (at most 6; a spectrum split into bins can have many), then the chromatic summary
+  ctx.font = "12px system-ui, sans-serif"; ctx.textAlign = "left";
+  let y = 18;
+  const MAX_LINES = 6;
+  const shown = live.wavelengths.length <= MAX_LINES ? live.wavelengths
+    : [...live.wavelengths.filter(w => w.id === live.primaryWavelength), ...live.wavelengths.filter(w => w.id !== live.primaryWavelength)].slice(0, MAX_LINES - 1);
+  for (const w of shown) {
+    const s = w.stats;
+    ctx.fillStyle = w.color;
+    ctx.fillText(`${w.label} ${fmt(w.lambdaNm, 1)} nm${w.id === live.primaryWavelength ? " (primary)" : ""}  ·  ${s.raysOnScreen}/${s.rayCount} on screen  ·  RMS ${fmt(s.screenRmsSpotMm, 4)} mm  ·  best focus ${fmt(s.bestFocusXmm, 3)} mm  ·  paraxial ${fmt(s.paraxialFocusXmm, 3)} mm`, 12, y, width - 24);
+    y += 15;
+  }
+  if (shown.length < live.wavelengths.length) {
+    ctx.fillStyle = COLORS.text;
+    ctx.fillText(`… and ${live.wavelengths.length - shown.length} more wavelengths`, 12, y, width - 24);
+    y += 15;
+  }
+  const shift = live.stats.chromaticFocalShiftMm || {};
+  ctx.fillStyle = COLORS.text;
+  ctx.fillText(`F–C focal shift: paraxial ${fmt(shift.paraxialFC, 4)} mm, best focus ${fmt(shift.bestFocusFC, 4)} mm  ·  polychromatic RMS on screen ${fmt(live.stats.polychromaticRmsSpotMm, 4)} mm`, 12, y, width - 24);
+  y += 15;
+  ctx.fillStyle = COLORS.selected;
+  for (const warning of live.warnings.slice(0, 3)) { ctx.fillText(`⚠ ${warning}`, 12, y, width - 24); y += 15; }
+  ctx.fillStyle = COLORS.text; ctx.textAlign = "right";
   ctx.fillText(nativeResult ? "solid: live preview · dashed: native solver" : "live preview (units: mm)", width - 12, height - 10);
 }

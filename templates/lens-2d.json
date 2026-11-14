@@ -1,19 +1,32 @@
 {
   "application": "raytrace",
-  "modelFormat": "raytrace-model/1",
+  "modelFormat": "raytrace-model/2",
   "x-fullmeta-schema": "../raytrace.schema.json",
   "metadata": {
     "id": "template",
     "name": "2D lens",
-    "description": "Collimated beam through a biconvex lens."
+    "description": "Collimated beam through an N-BK7 biconvex lens, traced at the F, d and C lines."
   },
   "model": {
-    "source": { "kind": "collimated", "x": -20, "y": 0, "angleDeg": 0, "width": 16, "rayCount": 11 },
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0,
+        "reference": "Glass catalogue indices (SCHOTT) are relative to air, so lens design normally treats air as n = 1." },
+      { "id": "N-BK7", "name": "SCHOTT N-BK7", "formula": "sellmeier",
+        "B": [1.03961212, 0.231792344, 1.01046945], "C": [0.00600069867, 0.0200179144, 103.560653],
+        "validRangeUm": [0.3, 2.5], "reference": "SCHOTT optical glass data sheet N-BK7 (nd = 1.51680, vd = 64.17). Relative to air." }
+    ],
+    "wavelengths": [
+      { "id": "F", "label": "F", "lambdaNm": 486.1327, "weight": 1 },
+      { "id": "d", "label": "d", "lambdaNm": 587.5618, "weight": 1 },
+      { "id": "C", "label": "C", "lambdaNm": 656.2725, "weight": 1 }
+    ],
+    "source": { "kind": "collimated", "x": -20, "y": 0, "angleDeg": 0, "width": 16, "rayCount": 11,
+      "spectrum": { "kind": "wavelengths", "temperatureK": 5778, "minNm": 380, "maxNm": 780, "bins": 16 } },
     "surfaces": [
-      { "id": "s1", "name": "Front face", "x": 0, "radius": 50, "semiAperture": 12, "nAfter": 1.5168 },
-      { "id": "s2", "name": "Back face", "x": 6, "radius": -50, "semiAperture": 12, "nAfter": 1.0 }
+      { "id": "s1", "name": "Front face", "x": 0, "radius": 50, "semiAperture": 12, "materialAfter": "N-BK7" },
+      { "id": "s2", "name": "Back face", "x": 6, "radius": -50, "semiAperture": 12, "materialAfter": "air" }
     ],
     "screen": { "x": 52, "height": 30 },
-    "settings": { "ambientIndex": 1.0 }
+    "settings": { "ambientMaterial": "air", "primaryWavelength": "d" }
   }
 }

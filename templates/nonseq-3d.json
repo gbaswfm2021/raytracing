@@ -1,0 +1,44 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace3d-model/1",
+  "x-fullmeta-schema": "../raytrace3d.schema.json",
+  "metadata": {
+    "id": "template",
+    "name": "3D BK7 singlet with detector",
+    "description": "The Stage 1 N-BK7 singlet (R = ±103.4 mm, 5 mm, Ø25 mm) as a 3D solid with a blackened edge. Collimated Ø20 mm beam at F, d, C; an irradiance map on a detector at the d-line best focus."
+  },
+  "model": {
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0 },
+      { "id": "N-BK7", "name": "SCHOTT N-BK7", "formula": "sellmeier",
+        "B": [1.03961212, 0.231792344, 1.01046945], "C": [0.00600069867, 0.0200179144, 103.560653],
+        "validRangeUm": [0.3, 2.5], "reference": "SCHOTT optical glass data sheet N-BK7 (nd = 1.51680, vd = 64.17). Relative to air." }
+    ],
+    "wavelengths": [
+      { "id": "F", "label": "F", "lambdaNm": 486.1327, "weight": 1 },
+      { "id": "d", "label": "d", "lambdaNm": 587.5618, "weight": 1 },
+      { "id": "C", "label": "C", "lambdaNm": 656.2725, "weight": 1 }
+    ],
+    "surfaceProperties": [
+      { "id": "glass", "name": "Uncoated glass (Fresnel)", "kind": "fresnel" },
+      { "id": "black", "name": "Black paint", "kind": "absorber" }
+    ],
+    "objects": [
+      { "id": "lens1", "name": "Singlet", "kind": "lens", "position": [0, 0, 0], "rotationDeg": [0, 0, 0],
+        "material": "N-BK7", "surfaceProperty": "glass",
+        "lens": { "radius1": 103.4, "conic1": 0, "radius2": -103.4, "conic2": 0, "thickness": 5, "diameter": 25 },
+        "faceProperties": { "edge": "black" } },
+      { "id": "det", "name": "Detector", "kind": "plate", "position": [0, 0, 103.08], "rotationDeg": [0, 0, 0],
+        "surfaceProperty": "black", "plate": { "shape": "rectangle", "width": 2, "height": 2 } }
+    ],
+    "sources": [
+      { "id": "src1", "name": "Collimated beam", "kind": "grid", "position": [0, 0, -20], "direction": [0, 0, 1],
+        "powerW": 1, "rayCount": 20000, "grid": { "shape": "circle", "diameter": 20, "sampling": "random" } }
+    ],
+    "analyses": [
+      { "id": "irr1", "name": "Detector irradiance", "kind": "irradiance", "object": "det", "face": "front", "pixels": [81, 81], "sizeMm": [0.6, 0.6] }
+    ],
+    "settings": { "ambientMaterial": "air", "rayHandling": "split", "fluxThreshold": 0.0001, "maxIntersections": 200,
+      "randomSeed": 1, "displayRays": 60, "previewRayCap": 2000 }
+  }
+}

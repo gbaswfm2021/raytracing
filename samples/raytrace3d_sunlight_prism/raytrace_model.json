@@ -1,0 +1,41 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace3d-model/1",
+  "x-fullmeta-schema": "../../applications/raytrace/raytrace3d.schema.json",
+  "metadata": {
+    "id": "raytrace3d_sunlight_prism",
+    "name": "Sunlight through a prism",
+    "description": "Visible sunlight (5778 K blackbody, 380–780 nm, sun's disc ±0.267°) through a 60° N-SF11 prism at minimum deviation for the d line (incidence 63.18°). Each ray carries its own wavelength, so the screen shows a continuous spectrum, blue deviated most."
+  },
+  "model": {
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0 },
+      { "id": "N-SF11", "name": "SCHOTT N-SF11", "formula": "sellmeier",
+        "B": [1.73759695, 0.313747346, 1.89878101], "C": [0.013188707, 0.0623068142, 155.23629],
+        "validRangeUm": [0.37, 2.5], "reference": "SCHOTT optical glass data sheet N-SF11 (nd = 1.78472, vd = 25.68). Relative to air." }
+    ],
+    "wavelengths": [],
+    "surfaceProperties": [
+      { "id": "glass", "name": "Uncoated glass (Fresnel)", "kind": "fresnel" },
+      { "id": "black", "name": "Black paint", "kind": "absorber" }
+    ],
+    "objects": [
+      { "id": "prism", "name": "60° prism", "kind": "prism", "position": [0, 0, 0], "rotationDeg": [0, 0, 0],
+        "material": "N-SF11", "surfaceProperty": "glass", "faceProperties": { "base": "black" },
+        "prism": { "apexAngleDeg": 60, "sideLength": 30, "height": 20 } },
+      { "id": "screen", "name": "Screen", "kind": "plate", "position": [-38.31, 0, 66.09], "rotationDeg": [0, -33.18, 0],
+        "surfaceProperty": "black", "plate": { "shape": "rectangle", "width": 40, "height": 12 } }
+    ],
+    "sources": [
+      { "id": "sun", "name": "Sunlight (visible)", "kind": "grid", "position": [-21.89, 0, -40.98], "direction": [0.54729, 0, 0.83694],
+        "powerW": 1, "rayCount": 30000,
+        "spectrum": { "kind": "blackbody", "temperatureK": 5778, "minNm": 380, "maxNm": 780 },
+        "grid": { "shape": "circle", "diameter": 6, "sampling": "random", "divergenceHalfAngleDeg": 0.267 } }
+    ],
+    "analyses": [
+      { "id": "irr1", "name": "Spectrum on screen", "kind": "irradiance", "object": "screen", "face": "front", "pixels": [200, 60], "display": "color" }
+    ],
+    "settings": { "ambientMaterial": "air", "rayHandling": "split", "fluxThreshold": 0.001, "maxIntersections": 50,
+      "randomSeed": 1, "displayRays": 300, "previewRayCap": 3000 }
+  }
+}

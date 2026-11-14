@@ -1,0 +1,347 @@
+{
+  "$id": "https://fullmeta.local/applications/raytrace/raytrace3d.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "application": "raytrace",
+  "title": "Ray Tracing 3D",
+  "description": "3D non-sequential ray tracing: solid lenses, blocks, cylinders, spheres and plates with Fresnel, mirror, absorbing and coated surfaces; collimated and point sources; irradiance maps and a flux report.",
+  "type": "object",
+  "x-fullmeta-schema": "../../platform/schemas/schema-editor.schema.json",
+  "x-fullmeta-ui-editor": { "widget": "modelEditor" },
+  "required": ["application", "modelFormat", "x-fullmeta-schema", "metadata", "model"],
+  "x-fullmeta-runtime": {
+    "$schema": "../../platform/schemas/fullmeta-model-runtime-1.schema.json",
+    "schema": "fullmeta-model-runtime/1",
+    "storage": {
+      "modelFile": "raytrace_model.json",
+      "projectRootFolder": "projects",
+      "runsDirectory": "raytrace_runs",
+      "resultsDirectory": "raytrace_results"
+    },
+    "externalPrograms": {
+      "raytraceSolver": {
+        "executable": ".runtime/raytrace2d.exe",
+        "pathType": "relative",
+        "allowedEntries": ["--trace"]
+      }
+    },
+    "editorApi": {
+      "projectCreate": {
+        "route": "/api/project/create",
+        "method": "POST",
+        "handler": "kernel.workspace.project.create",
+        "input": { "contentType": "application/json", "fields": [["projectId", "New project ID"], ["profileId", "Selected profile"], ["model", "Initial model JSON"]] },
+        "output": { "contentType": "application/json", "fields": [["id", "Created project ID"], ["folder", "Project folder"], ["file", "Model filename"]] }
+      }
+    }
+  },
+  "properties": {
+    "application": { "const": "raytrace", "title": "Application" },
+    "modelFormat": { "const": "raytrace3d-model/1", "type": "string", "title": "Model format" },
+    "x-fullmeta-schema": { "type": "string", "title": "Schema" },
+    "metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "title": "Model ID" },
+        "name": { "type": "string", "title": "Name", "default": "3D ray tracing model" },
+        "description": { "type": "string", "title": "Description", "default": "" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "title": "Model",
+      "required": ["objects", "sources", "settings"],
+      "properties": {
+        "materials": { "type": "array", "title": "Materials", "items": { "$ref": "#/$defs/material" }, "default": [],
+          "description": "Optical materials (same formulas and library as the 2D app). Library materials are copied in." },
+        "wavelengths": { "type": "array", "title": "Wavelengths", "items": { "$ref": "#/$defs/wavelength" }, "maxItems": 64, "default": [],
+          "description": "Every source emits at all of these, split by weight. Empty: the d line only." },
+        "surfaceProperties": { "type": "array", "title": "Surface properties", "items": { "$ref": "#/$defs/surfaceProperty" }, "default": [] },
+        "objects": { "type": "array", "title": "Objects", "items": { "$ref": "#/$defs/object" }, "default": [],
+          "description": "Solids (lens, block, cylinder, sphere) and thin plates. Solids must not overlap; touching faces (cemented lenses) are fine." },
+        "sources": { "type": "array", "title": "Sources", "items": { "$ref": "#/$defs/source" }, "default": [] },
+        "analyses": { "type": "array", "title": "Analyses", "items": { "$ref": "#/$defs/analysis" }, "default": [] },
+        "settings": { "$ref": "#/$defs/settings" }
+      }
+    }
+  },
+  "$defs": {
+    "vector3": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+    "material": {
+      "type": "object",
+      "title": "Material",
+      "required": ["id", "name", "formula"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Material" },
+        "formula": { "type": "string", "title": "Dispersion formula", "enum": ["constant", "cauchy", "sellmeier", "gas"], "default": "constant",
+          "description": "constant: n. cauchy: n = A + B1/λ² + B2/λ⁴ + … sellmeier: n² − 1 = Σ Bi λ²/(λ² − Ci). gas: n − 1 = Σ Bi/(Ci − λ⁻²). λ in µm." },
+        "n": { "type": "number", "title": "Refractive index n (constant)", "default": 1.5, "exclusiveMinimum": 0 },
+        "A": { "type": "number", "title": "Cauchy A" },
+        "B": { "type": "array", "title": "Coefficients B", "items": { "type": "number" } },
+        "C": { "type": "array", "title": "Coefficients C", "items": { "type": "number" } },
+        "validRangeUm": { "type": "array", "title": "Valid range (µm)", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "reference": { "type": "string", "title": "Data source" }
+      }
+    },
+    "wavelength": {
+      "type": "object",
+      "title": "Wavelength",
+      "required": ["id", "label", "lambdaNm", "weight"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "label": { "type": "string", "title": "Label", "default": "λ" },
+        "lambdaNm": { "type": "number", "title": "Vacuum wavelength (nm)", "default": 550, "exclusiveMinimum": 0 },
+        "weight": { "type": "number", "title": "Weight (share of source power)", "default": 1, "minimum": 0 },
+        "color": { "type": "string", "title": "Display colour (#rrggbb)", "pattern": "^#[0-9a-fA-F]{6}$" }
+      }
+    },
+    "surfaceProperty": {
+      "type": "object",
+      "title": "Surface property",
+      "required": ["id", "name", "kind"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Surface property" },
+        "kind": { "type": "string", "title": "Kind", "enum": ["fresnel", "mirror", "absorber", "table"], "default": "fresnel",
+          "description": "fresnel: uncoated dielectric (unpolarised Fresnel R/T, total internal reflection). mirror: specular reflectance R, the rest absorbed. absorber: absorbs all. table: fixed absorptance A, specular reflectance R and transmittance T (A + R + T = 1)." },
+        "reflectance": { "type": "number", "title": "Reflectance R", "minimum": 0, "maximum": 1 },
+        "absorptance": { "type": "number", "title": "Absorptance A", "minimum": 0, "maximum": 1 },
+        "transmittance": { "type": "number", "title": "Transmittance T", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "object": {
+      "type": "object",
+      "title": "Object",
+      "required": ["id", "name", "kind", "position", "rotationDeg"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Object" },
+        "kind": { "type": "string", "title": "Kind", "enum": ["lens", "block", "cylinder", "sphere", "prism", "plate"], "readOnly": true },
+        "position": { "$ref": "#/$defs/vector3", "title": "Position x, y, z (mm)", "default": [0, 0, 0] },
+        "rotationDeg": { "$ref": "#/$defs/vector3", "title": "Rotation about x, y, z (deg)", "default": [0, 0, 0],
+          "description": "Applied about the object's origin: first x, then y, then z." },
+        "material": { "type": "string", "title": "Material (solids)",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "materials"], "targetProperty": "id", "targetLabel": "material" } },
+        "surfaceProperty": { "type": "string", "title": "Surface property (all faces)",
+          "description": "Empty: Fresnel for solids, absorber for plates.",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "surfaceProperties"], "targetProperty": "id", "targetLabel": "surface property", "emptyChoiceLabel": "Default" } },
+        "faceProperties": {
+          "type": "object", "title": "Face overrides",
+          "description": "Surface property per face. Lens: front, back, edge. Block: front, back, left, right, bottom, top. Cylinder: front, back, side. Sphere: surface. Prism: entrance, exit, base, top, bottom. Plate: front.",
+          "properties": {
+            "front": { "$ref": "#/$defs/faceReference", "title": "front" }, "back": { "$ref": "#/$defs/faceReference", "title": "back" },
+            "edge": { "$ref": "#/$defs/faceReference", "title": "edge" }, "side": { "$ref": "#/$defs/faceReference", "title": "side" },
+            "left": { "$ref": "#/$defs/faceReference", "title": "left" }, "right": { "$ref": "#/$defs/faceReference", "title": "right" },
+            "top": { "$ref": "#/$defs/faceReference", "title": "top" }, "bottom": { "$ref": "#/$defs/faceReference", "title": "bottom" },
+            "surface": { "$ref": "#/$defs/faceReference", "title": "surface" },
+            "entrance": { "$ref": "#/$defs/faceReference", "title": "entrance" }, "exit": { "$ref": "#/$defs/faceReference", "title": "exit" },
+            "base": { "$ref": "#/$defs/faceReference", "title": "base" }
+          }
+        },
+        "lens": {
+          "type": "object", "title": "Lens",
+          "description": "Front vertex at the object origin, axis +z. Radius > 0: centre of curvature towards +z; 0 = flat. Conic k: 0 sphere, −1 paraboloid.",
+          "properties": {
+            "radius1": { "type": "number", "title": "Front radius (mm)" }, "conic1": { "type": "number", "title": "Front conic k" },
+            "radius2": { "type": "number", "title": "Back radius (mm)" }, "conic2": { "type": "number", "title": "Back conic k" },
+            "thickness": { "type": "number", "title": "Centre thickness (mm)", "exclusiveMinimum": 0 },
+            "diameter": { "type": "number", "title": "Diameter (mm)", "exclusiveMinimum": 0 }
+          }
+        },
+        "block": { "type": "object", "title": "Block", "description": "Centred on the object origin.",
+          "properties": { "size": { "$ref": "#/$defs/vector3", "title": "Size x, y, z (mm)" } } },
+        "cylinder": { "type": "object", "title": "Cylinder", "description": "Axis +z from the object origin.",
+          "properties": { "diameter": { "type": "number", "title": "Diameter (mm)", "exclusiveMinimum": 0 }, "length": { "type": "number", "title": "Length (mm)", "exclusiveMinimum": 0 } } },
+        "sphere": { "type": "object", "title": "Sphere", "description": "Centred on the object origin.",
+          "properties": { "diameter": { "type": "number", "title": "Diameter (mm)", "exclusiveMinimum": 0 } } },
+        "prism": { "type": "object", "title": "Prism",
+          "description": "Isosceles triangular prism extruded along y, centred near the origin: apex towards +x, faces entrance (−z side), exit (+z side), base (−x), top and bottom.",
+          "properties": {
+            "apexAngleDeg": { "type": "number", "title": "Apex angle (deg)", "exclusiveMinimum": 0, "exclusiveMaximum": 180 },
+            "sideLength": { "type": "number", "title": "Entrance / exit face length (mm)", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "title": "Height y (mm)", "exclusiveMinimum": 0 }
+          } },
+        "plate": { "type": "object", "title": "Plate", "description": "Thin surface in the object's x–y plane (no volume): mirror, stop, coating or detector.",
+          "properties": {
+            "shape": { "type": "string", "title": "Shape", "enum": ["rectangle", "circle"] },
+            "width": { "type": "number", "title": "Width x (mm)", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "title": "Height y (mm)", "exclusiveMinimum": 0 },
+            "diameter": { "type": "number", "title": "Diameter (mm)", "exclusiveMinimum": 0 }
+          } }
+      }
+    },
+    "faceReference": {
+      "type": "string",
+      "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "surfaceProperties"], "targetProperty": "id", "targetLabel": "surface property", "emptyChoiceLabel": "Object default" }
+    },
+    "source": {
+      "type": "object",
+      "title": "Source",
+      "required": ["id", "name", "kind", "position", "direction", "powerW", "rayCount"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Source" },
+        "kind": { "type": "string", "title": "Kind", "enum": ["grid", "point"], "readOnly": true },
+        "position": { "$ref": "#/$defs/vector3", "title": "Position x, y, z (mm)", "default": [0, 0, -20] },
+        "direction": { "$ref": "#/$defs/vector3", "title": "Direction x, y, z", "default": [0, 0, 1] },
+        "powerW": { "type": "number", "title": "Power (W)", "default": 1, "minimum": 0 },
+        "rayCount": { "type": "integer", "title": "Rays (per wavelength; in total for a spectrum)", "default": 10000, "minimum": 1, "maximum": 10000000 },
+        "spectrum": { "type": "object", "title": "Spectrum",
+          "description": "wavelengths: the project's wavelength list, power split by weight. blackbody: Planck spectrum at the temperature (the sun ≈ 5778 K) between min and max. table: points [[nm, relative power per nm], …]. With blackbody or table each ray draws its own wavelength, so the spectrum is continuous.",
+          "properties": {
+            "kind": { "type": "string", "title": "Kind", "enum": ["wavelengths", "blackbody", "table"] },
+            "temperatureK": { "type": "number", "title": "Blackbody temperature (K)", "exclusiveMinimum": 0 },
+            "minNm": { "type": "number", "title": "From (nm)", "exclusiveMinimum": 0 },
+            "maxNm": { "type": "number", "title": "To (nm)", "exclusiveMinimum": 0 },
+            "points": { "type": "array", "title": "Table [nm, value]", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+          } },
+        "grid": { "type": "object", "title": "Collimated beam",
+          "properties": {
+            "shape": { "type": "string", "title": "Shape", "enum": ["circle", "rectangle"] },
+            "diameter": { "type": "number", "title": "Diameter (mm)", "minimum": 0 },
+            "width": { "type": "number", "title": "Width (mm)", "minimum": 0 },
+            "height": { "type": "number", "title": "Height (mm)", "minimum": 0 },
+            "sampling": { "type": "string", "title": "Sampling", "enum": ["random", "regular"] },
+            "divergenceHalfAngleDeg": { "type": "number", "title": "Divergence half-angle (deg)", "minimum": 0, "maximum": 90,
+              "description": "0 = perfectly collimated. The sun's disc: 0.267°." }
+          } },
+        "point": { "type": "object", "title": "Point source",
+          "properties": {
+            "coneHalfAngleDeg": { "type": "number", "title": "Cone half-angle (deg)", "minimum": 0, "maximum": 180, "description": "180 = isotropic." },
+            "sampling": { "type": "string", "title": "Sampling", "enum": ["random", "regular"] }
+          } }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "title": "Analysis",
+      "required": ["id", "name", "kind", "object", "face", "pixels"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Irradiance" },
+        "kind": { "type": "string", "title": "Kind", "enum": ["irradiance"], "default": "irradiance" },
+        "object": { "type": "string", "title": "Object", "default": "",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "objects"], "targetProperty": "id", "targetLabel": "object" } },
+        "face": { "type": "string", "title": "Face", "enum": ["front", "back", "edge", "side", "left", "right", "top", "bottom", "surface", "entrance", "exit", "base"], "default": "front" },
+        "pixels": { "type": "array", "title": "Pixels nx, ny", "items": { "type": "integer", "minimum": 1, "maximum": 1000 }, "minItems": 2, "maxItems": 2, "default": [64, 64] },
+        "display": { "type": "string", "title": "Show as", "enum": ["power", "color"], "default": "power",
+          "description": "power: false-colour irradiance. color: true colour of the light (CIE 1931 → sRGB)." },
+        "sizeMm": { "type": "array", "title": "Map size w, h (mm)", "items": { "type": "number" }, "minItems": 2, "maxItems": 2,
+          "description": "Optional; default: the whole face. Counts every ray that meets the face, from either side." }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "title": "Trace settings",
+      "properties": {
+        "ambientMaterial": { "type": "string", "title": "Ambient medium", "default": "air",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "materials"], "targetProperty": "id", "targetLabel": "material" } },
+        "rayHandling": { "type": "string", "title": "Ray handling", "enum": ["split", "monteCarlo"], "default": "split",
+          "description": "split: reflected and transmitted parts both continue (exact, more rays). monteCarlo: one branch chosen at random with its probability (faster, noisier)." },
+        "fluxThreshold": { "type": "number", "title": "Flux threshold (fraction of starting flux)", "default": 0.0001, "minimum": 0 },
+        "maxIntersections": { "type": "integer", "title": "Max intersections per ray", "default": 200, "minimum": 1 },
+        "randomSeed": { "type": "integer", "title": "Random seed", "default": 1 },
+        "displayRays": { "type": "integer", "title": "Rays drawn per source and wavelength", "default": 100, "minimum": 0 },
+        "previewRayCap": { "type": "integer", "title": "Live preview: rays per source and wavelength", "default": 2000, "minimum": 1 }
+      }
+    }
+  },
+  "x-fullmeta-ui-tree": {
+    "children": [
+      { "path": ["model", "materials"], "role": "collection" },
+      { "path": ["model", "wavelengths"], "role": "collection" },
+      { "path": ["model", "surfaceProperties"], "role": "collection" },
+      { "path": ["model", "objects"], "role": "collection" },
+      { "path": ["model", "sources"], "role": "collection" },
+      { "path": ["model", "analyses"], "role": "collection" },
+      { "path": ["model", "settings"], "role": "objectRoot", "children": [] }
+    ],
+    "itemLabels": [
+      { "when": { "path": ["model", "wavelengths"], "scope": "collection" }, "properties": ["label", "id"] }
+    ],
+    "actionMenus": [
+      { "when": { "path": ["model", "wavelengths", "*"], "scope": "item" },
+        "entries": [{ "action": "duplicate-item", "label": "Duplicate" }, { "separator": true }, { "action": "delete", "label": "Delete" }] },
+      { "when": { "path": ["model", "*", "*"], "scope": "item" },
+        "entries": [{ "action": "duplicate-item", "label": "Duplicate" }, { "action": "rename", "label": "Rename" }, { "separator": true }, { "action": "delete", "label": "Delete" }] },
+      { "when": { "path": ["model", "materials"], "scope": "collection" },
+        "entries": [{ "catalog": "materialLibrary" }, { "separator": true }, { "action": "add-material", "label": "Add custom material" }] },
+      { "when": { "path": ["model", "wavelengths"], "scope": "collection" },
+        "entries": [{ "catalog": "spectralLines" }, { "separator": true }, { "action": "add-wavelength", "label": "Add custom wavelength" }] },
+      { "when": { "path": ["model", "surfaceProperties"], "scope": "collection" },
+        "entries": [{ "action": "add-prop-fresnel", "label": "Add uncoated (Fresnel)" }, { "action": "add-prop-mirror", "label": "Add mirror" },
+          { "action": "add-prop-absorber", "label": "Add absorber" }, { "action": "add-prop-table", "label": "Add coating (A/R/T table)" }] },
+      { "when": { "path": ["model", "objects"], "scope": "collection" },
+        "entries": [{ "action": "add-lens", "label": "Add Lens" }, { "action": "add-block", "label": "Add Block" },
+          { "action": "add-cylinder", "label": "Add Cylinder" }, { "action": "add-sphere", "label": "Add Sphere" },
+          { "action": "add-prism", "label": "Add Prism" }, { "action": "add-plate", "label": "Add Plate (mirror / detector / stop)" }] },
+      { "when": { "path": ["model", "sources"], "scope": "collection" },
+        "entries": [{ "action": "add-sun-source", "label": "Add sunlight (5778 K blackbody, ±0.27°)" }, { "action": "add-grid-source", "label": "Add collimated beam" }, { "action": "add-point-source", "label": "Add point source" }] },
+      { "when": { "path": ["model", "analyses"], "scope": "collection" },
+        "entries": [{ "action": "add-irradiance", "label": "Add irradiance map" }] }
+    ],
+    "insertions": [
+      { "action": "duplicate-item", "destination": { "from": "itemArrayPath", "kind": "array" }, "afterIndex": "target",
+        "template": { "$copy": "item" }, "when": { "path": ["model", "*", "*"], "scope": "item" } },
+      { "action": "add-material", "factory": "schemaItemTemplate", "variant": "material",
+        "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "materials"], "scope": "collection" } },
+      { "catalog": "materialLibrary", "factory": "libraryMaterial",
+        "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "materials"], "scope": "collection" } },
+      { "action": "add-wavelength", "factory": "schemaItemTemplate", "variant": "wavelength",
+        "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "wavelengths"], "scope": "collection" } },
+      { "catalog": "spectralLines", "factory": "spectralLine",
+        "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "wavelengths"], "scope": "collection" } },
+
+      { "action": "add-prop-fresnel", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "surfaceProperties"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "fresnel" }, "name": "Uncoated (Fresnel)", "kind": "fresnel" } },
+      { "action": "add-prop-mirror", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "surfaceProperties"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "mirror" }, "name": "Mirror", "kind": "mirror", "reflectance": 0.95 } },
+      { "action": "add-prop-absorber", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "surfaceProperties"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "absorber" }, "name": "Absorber", "kind": "absorber" } },
+      { "action": "add-prop-table", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "surfaceProperties"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "coating" }, "name": "Coating", "kind": "table", "absorptance": 0, "reflectance": 0.5, "transmittance": 0.5 } },
+
+      { "action": "add-lens", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "lens" }, "name": { "$generate": "name", "base": "Lens" }, "kind": "lens",
+          "position": [0, 0, 0], "rotationDeg": [0, 0, 0], "material": "", "surfaceProperty": "",
+          "lens": { "radius1": 50, "conic1": 0, "radius2": -50, "conic2": 0, "thickness": 5, "diameter": 25 } } },
+      { "action": "add-block", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "block" }, "name": { "$generate": "name", "base": "Block" }, "kind": "block",
+          "position": [0, 0, 0], "rotationDeg": [0, 0, 0], "material": "", "surfaceProperty": "", "block": { "size": [20, 20, 10] } } },
+      { "action": "add-cylinder", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "cylinder" }, "name": { "$generate": "name", "base": "Cylinder" }, "kind": "cylinder",
+          "position": [0, 0, 0], "rotationDeg": [0, 0, 0], "material": "", "surfaceProperty": "", "cylinder": { "diameter": 10, "length": 20 } } },
+      { "action": "add-sphere", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "sphere" }, "name": { "$generate": "name", "base": "Sphere" }, "kind": "sphere",
+          "position": [0, 0, 0], "rotationDeg": [0, 0, 0], "material": "", "surfaceProperty": "", "sphere": { "diameter": 10 } } },
+      { "action": "add-plate", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "plate" }, "name": { "$generate": "name", "base": "Plate" }, "kind": "plate",
+          "position": [0, 0, 50], "rotationDeg": [0, 0, 0], "surfaceProperty": "", "plate": { "shape": "rectangle", "width": 20, "height": 20 } } },
+
+      { "action": "add-prism", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "objects"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "prism" }, "name": { "$generate": "name", "base": "Prism" }, "kind": "prism",
+          "position": [0, 0, 0], "rotationDeg": [0, 0, 0], "material": "", "surfaceProperty": "",
+          "prism": { "apexAngleDeg": 60, "sideLength": 30, "height": 20 } } },
+      { "action": "add-sun-source", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "sources"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "sun" }, "name": { "$generate": "name", "base": "Sunlight" }, "kind": "grid",
+          "position": [0, 0, -20], "direction": [0, 0, 1], "powerW": 1, "rayCount": 20000,
+          "spectrum": { "kind": "blackbody", "temperatureK": 5778, "minNm": 300, "maxNm": 2500 },
+          "grid": { "shape": "circle", "diameter": 20, "sampling": "random", "divergenceHalfAngleDeg": 0.267 } } },
+      { "action": "add-grid-source", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "sources"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "beam" }, "name": { "$generate": "name", "base": "Collimated beam" }, "kind": "grid",
+          "position": [0, 0, -20], "direction": [0, 0, 1], "powerW": 1, "rayCount": 10000,
+          "spectrum": { "kind": "wavelengths", "temperatureK": 5778, "minNm": 380, "maxNm": 780 },
+          "grid": { "shape": "circle", "diameter": 10, "sampling": "random", "divergenceHalfAngleDeg": 0 } } },
+      { "action": "add-point-source", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "sources"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "point" }, "name": { "$generate": "name", "base": "Point source" }, "kind": "point",
+          "position": [0, 0, -20], "direction": [0, 0, 1], "powerW": 1, "rayCount": 10000,
+          "spectrum": { "kind": "wavelengths", "temperatureK": 5778, "minNm": 380, "maxNm": 780 },
+          "point": { "coneHalfAngleDeg": 10, "sampling": "random" } } },
+      { "action": "add-irradiance", "destination": { "from": "arrayPath", "kind": "array" }, "when": { "path": ["model", "analyses"], "scope": "collection" },
+        "template": { "id": { "$generate": "id", "base": "irradiance" }, "name": { "$generate": "name", "base": "Irradiance" }, "kind": "irradiance",
+          "object": "", "face": "front", "pixels": [64, 64] } }
+    ]
+  }
+}

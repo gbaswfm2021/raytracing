@@ -3,7 +3,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "application": "raytrace",
   "title": "Ray Tracing",
-  "description": "2D geometric ray tracing through sequential refracting surfaces (lenses).",
+  "description": "2D geometric ray tracing through sequential refracting surfaces (lenses), with dispersive materials and multiple wavelengths.",
   "type": "object",
   "x-fullmeta-schema": "../../platform/schemas/schema-editor.schema.json",
   "x-fullmeta-ui-editor": { "widget": "modelEditor" },
@@ -38,13 +38,16 @@
         "handler": "kernel.program.json",
         "externalProgram": { "registryId": "raytraceSolver", "entry": "--trace", "protocol": "json-stdio" },
         "input": { "contentType": "application/json", "fields": [["model", "Current model JSON"]] },
-        "output": { "contentType": "application/json", "fields": [["result", "Traced ray paths and screen hits"]] }
+        "output": { "contentType": "application/json", "fields": [["result", "Traced ray paths, per-wavelength focus and chromatic statistics"]] }
       }
     }
   },
   "properties": {
     "application": { "const": "raytrace", "title": "Application" },
-    "modelFormat": { "const": "raytrace-model/1", "type": "string", "title": "Model format" },
+    "modelFormat": {
+      "type": "string", "title": "Model format", "enum": ["raytrace-model/2", "raytrace-model/1"], "default": "raytrace-model/2",
+      "description": "raytrace-model/2 adds materials and wavelengths. raytrace-model/1 projects (nAfter, ambientIndex) still open and trace at the d line."
+    },
     "x-fullmeta-schema": { "type": "string", "title": "Schema" },
     "metadata": {
       "type": "object",
@@ -61,6 +64,21 @@
       "title": "Model",
       "required": ["source", "surfaces", "screen", "settings"],
       "properties": {
+        "materials": {
+          "type": "array",
+          "title": "Materials",
+          "description": "Optical materials used by this project. Library materials are copied in, so the project stays reproducible.",
+          "items": { "$ref": "#/$defs/material" },
+          "default": []
+        },
+        "wavelengths": {
+          "type": "array",
+          "title": "Wavelengths",
+          "description": "Vacuum wavelengths traced by every source. Empty: the d line (587.5618 nm) only.",
+          "items": { "$ref": "#/$defs/wavelength" },
+          "maxItems": 24,
+          "default": []
+        },
         "source": { "$ref": "#/$defs/source" },
         "surfaces": {
           "type": "array",
@@ -75,6 +93,37 @@
     }
   },
   "$defs": {
+    "material": {
+      "type": "object",
+      "title": "Material",
+      "required": ["id", "name", "formula"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "name": { "type": "string", "title": "Name", "default": "Material" },
+        "formula": {
+          "type": "string", "title": "Dispersion formula", "enum": ["constant", "cauchy", "sellmeier", "gas"], "default": "constant",
+          "description": "constant: n. cauchy: n = A + B1/λ² + B2/λ⁴ + … sellmeier: n² − 1 = Σ Bi λ²/(λ² − Ci). gas: n − 1 = Σ Bi/(Ci − λ⁻²). λ in µm."
+        },
+        "n": { "type": "number", "title": "Refractive index n (constant)", "default": 1.5, "exclusiveMinimum": 0 },
+        "A": { "type": "number", "title": "Cauchy A" },
+        "B": { "type": "array", "title": "Coefficients B", "items": { "type": "number" }, "description": "Cauchy: B1, B2, … (µm², µm⁴, …). Sellmeier: B1…Bk. Gas: B1…Bk (µm⁻²)." },
+        "C": { "type": "array", "title": "Coefficients C", "items": { "type": "number" }, "description": "Sellmeier: C1…Ck in µm² (= λi²). Gas: C1…Ck in µm⁻²." },
+        "validRangeUm": { "type": "array", "title": "Valid range (µm)", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "The tracer warns when a wavelength falls outside it." },
+        "reference": { "type": "string", "title": "Data source" }
+      }
+    },
+    "wavelength": {
+      "type": "object",
+      "title": "Wavelength",
+      "required": ["id", "label", "lambdaNm", "weight"],
+      "properties": {
+        "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
+        "label": { "type": "string", "title": "Label", "default": "λ" },
+        "lambdaNm": { "type": "number", "title": "Vacuum wavelength (nm)", "default": 550, "exclusiveMinimum": 0 },
+        "weight": { "type": "number", "title": "Weight", "default": 1, "minimum": 0, "description": "Relative weight in the polychromatic spot and focus." },
+        "color": { "type": "string", "title": "Display colour (#rrggbb)", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional; by default the colour follows the wavelength." }
+      }
+    },
     "source": {
       "type": "object",
       "title": "Light source",
@@ -91,20 +140,35 @@
         "y": { "type": "number", "title": "Position y (mm)", "default": 0 },
         "angleDeg": { "type": "number", "title": "Beam tilt / fan angle (deg)", "default": 0, "description": "Collimated: tilt of the beam. Point: full fan angle." },
         "width": { "type": "number", "title": "Beam width (mm)", "default": 16, "minimum": 0 },
-        "rayCount": { "type": "integer", "title": "Number of rays", "default": 11, "minimum": 1, "maximum": 500 }
+        "rayCount": { "type": "integer", "title": "Rays per wavelength", "default": 11, "minimum": 1, "maximum": 500 },
+        "spectrum": { "type": "object", "title": "Spectrum",
+          "description": "Optional. blackbody (e.g. the sun, 5778 K) or table [[nm, relative power per nm], …]: replaces the Wavelengths list with equal-width bins weighted by band power, so focus and chromatic results stay per wavelength. kind wavelengths or absent: use the Wavelengths list.",
+          "properties": {
+            "kind": { "type": "string", "title": "Kind", "enum": ["wavelengths", "blackbody", "table"] },
+            "temperatureK": { "type": "number", "title": "Blackbody temperature (K)", "exclusiveMinimum": 0 },
+            "minNm": { "type": "number", "title": "From (nm)", "exclusiveMinimum": 0 },
+            "maxNm": { "type": "number", "title": "To (nm)", "exclusiveMinimum": 0 },
+            "bins": { "type": "integer", "title": "Bins", "minimum": 1, "maximum": 200 },
+            "points": { "type": "array", "title": "Table [nm, value]", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+          } }
       }
     },
     "surface": {
       "type": "object",
       "title": "Surface",
-      "required": ["id", "name", "x", "radius", "semiAperture", "nAfter"],
+      "required": ["id", "name", "x", "radius", "semiAperture"],
       "properties": {
         "id": { "type": "string", "title": "ID", "x-fullmeta-generated": true },
         "name": { "type": "string", "title": "Name", "default": "Surface" },
         "x": { "type": "number", "title": "Vertex position x (mm)", "default": 0 },
         "radius": { "type": "number", "title": "Radius of curvature (mm)", "default": 50, "description": "Positive: centre of curvature to the right. 0 = flat surface." },
         "semiAperture": { "type": "number", "title": "Semi-aperture (mm)", "default": 12, "exclusiveMinimum": 0 },
-        "nAfter": { "type": "number", "title": "Refractive index after surface", "default": 1.5, "minimum": 1 }
+        "materialAfter": {
+          "type": "string", "title": "Material after surface", "default": "",
+          "description": "Medium to the right of this surface. Empty: the ambient medium.",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "materials"], "targetProperty": "id", "targetLabel": "material", "emptyChoiceLabel": "Ambient medium" }
+        },
+        "nAfter": { "type": "number", "title": "Refractive index after surface (raytrace-model/1)", "minimum": 1, "description": "Used only when no material is chosen. Kept so raytrace-model/1 projects still work." }
       }
     },
     "screen": {
@@ -119,32 +183,93 @@
     "settings": {
       "type": "object",
       "title": "Ray settings",
-      "required": ["ambientIndex"],
       "properties": {
-        "ambientIndex": { "type": "number", "title": "Ambient refractive index", "default": 1.0, "minimum": 1 }
+        "ambientMaterial": {
+          "type": "string", "title": "Ambient medium", "default": "air",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "materials"], "targetProperty": "id", "targetLabel": "material" }
+        },
+        "primaryWavelength": {
+          "type": "string", "title": "Primary wavelength", "default": "d",
+          "description": "Used for the glass shading and the headline numbers in the preview.",
+          "x-fullmeta-modelReference": { "scope": "model", "targetPath": ["model", "wavelengths"], "targetProperty": "id", "targetLabel": "wavelength" }
+        },
+        "ambientIndex": { "type": "number", "title": "Ambient refractive index (raytrace-model/1)", "minimum": 1, "description": "Used only when no ambient material is chosen." }
       }
     }
   },
   "x-fullmeta-ui-tree": {
     "children": [
+      { "path": ["model", "materials"], "role": "collection" },
+      { "path": ["model", "wavelengths"], "role": "collection" },
       { "path": ["model", "source"], "role": "objectRoot", "children": [] },
       { "path": ["model", "surfaces"], "role": "collection" },
       { "path": ["model", "screen"], "role": "objectRoot", "children": [] },
       { "path": ["model", "settings"], "role": "objectRoot", "children": [] }
     ],
+    "itemLabels": [
+      { "when": { "path": ["model", "wavelengths"], "scope": "collection" }, "properties": ["label", "id"] }
+    ],
     "actionMenus": [
+      { "when": { "path": ["model", "wavelengths", "*"], "scope": "item" },
+        "entries": [{ "action": "duplicate-item", "label": "Duplicate" }, { "separator": true }, { "action": "delete", "label": "Delete" }] },
+      { "when": { "path": ["model", "*", "*"], "scope": "item" },
+        "entries": [{ "action": "duplicate-item", "label": "Duplicate" }, { "action": "rename", "label": "Rename" }, { "separator": true }, { "action": "delete", "label": "Delete" }] },
       {
         "entries": [{ "action": "add-surface", "label": "Add Surface" }],
         "when": { "path": ["model", "surfaces"], "scope": "collection" }
+      },
+      {
+        "entries": [
+          { "catalog": "materialLibrary" },
+          { "separator": true },
+          { "action": "add-material", "label": "Add custom material" }
+        ],
+        "when": { "path": ["model", "materials"], "scope": "collection" }
+      },
+      {
+        "entries": [
+          { "catalog": "spectralLines" },
+          { "separator": true },
+          { "action": "add-wavelength", "label": "Add custom wavelength" }
+        ],
+        "when": { "path": ["model", "wavelengths"], "scope": "collection" }
       }
     ],
     "insertions": [
+      { "action": "duplicate-item", "destination": { "from": "itemArrayPath", "kind": "array" }, "afterIndex": "target",
+        "template": { "$copy": "item" }, "when": { "path": ["model", "*", "*"], "scope": "item" } },
       {
         "action": "add-surface",
         "destination": { "from": "arrayPath", "kind": "array" },
         "factory": "schemaItemTemplate",
         "variant": "surface",
         "when": { "path": ["model", "surfaces"], "scope": "collection" }
+      },
+      {
+        "action": "add-material",
+        "destination": { "from": "arrayPath", "kind": "array" },
+        "factory": "schemaItemTemplate",
+        "variant": "material",
+        "when": { "path": ["model", "materials"], "scope": "collection" }
+      },
+      {
+        "catalog": "materialLibrary",
+        "destination": { "from": "arrayPath", "kind": "array" },
+        "factory": "libraryMaterial",
+        "when": { "path": ["model", "materials"], "scope": "collection" }
+      },
+      {
+        "action": "add-wavelength",
+        "destination": { "from": "arrayPath", "kind": "array" },
+        "factory": "schemaItemTemplate",
+        "variant": "wavelength",
+        "when": { "path": ["model", "wavelengths"], "scope": "collection" }
+      },
+      {
+        "catalog": "spectralLines",
+        "destination": { "from": "arrayPath", "kind": "array" },
+        "factory": "spectralLine",
+        "when": { "path": ["model", "wavelengths"], "scope": "collection" }
       }
     ]
   }

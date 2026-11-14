@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Raytrace 3D throughput</title></head>
+<body>
+<!-- Real-time throughput of the 3D engine. Runs synchronously before the load event (no top-level await, model
+     loaded with a synchronous request), so headless --dump-dom WITHOUT --virtual-time-budget reports real time. -->
+<pre id="summary">running</pre>
+<script type="module">
+import { traceScene } from "../js/trace3d.js";
+const load = path => { const x = new XMLHttpRequest(); x.open("GET", path, false); x.send(); return JSON.parse(x.responseText); };
+const lines = [];
+for (const [name, path, rays] of [["singlet (split)", "../samples/raytrace3d_singlet/raytrace_model.json", 100000],
+  ["sunlight prism (split)", "../samples/raytrace3d_sunlight_prism/raytrace_model.json", 100000]]) {
+  const model = load(path);
+  model.model.sources[0].rayCount = rays;
+  const t0 = performance.now();
+  const r = traceScene(model);
+  const s = (performance.now() - t0) / 1000;
+  lines.push(`${name}: ${r.totals.raysTraced} launched rays, ${r.totals.segments} segments in ${s.toFixed(2)} s → ${Math.round(r.totals.raysTraced / s)} rays/s, ${Math.round(r.totals.segments / s)} segments/s`);
+}
+document.getElementById("summary").textContent = lines.join("\n");
+</script>
+</body>
+</html>

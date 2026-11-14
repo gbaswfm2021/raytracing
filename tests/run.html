@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Raytrace checks</title></head>
+<body>
+<!-- Open in a browser through the FullMeta server (http://127.0.0.1:8766/applications/raytrace/tests/run.html),
+     or headless: msedge --headless --dump-dom <url>. Results land in #out as JSON; #summary says PASS/FAIL. -->
+<pre id="summary">running</pre>
+<pre id="out"></pre>
+<script type="module">
+import { runChecks } from "./checks.js";
+const out = document.getElementById("out"), summary = document.getElementById("summary");
+try {
+  const report = await runChecks();
+  out.textContent = JSON.stringify(report, null, 2);
+  const failed = report.checks.filter(c => !c.pass);
+  summary.textContent = failed.length ? `FAIL ${failed.length}/${report.checks.length}` : `PASS ${report.checks.length}/${report.checks.length}`;
+} catch (error) {
+  summary.textContent = `ERROR ${error.message}`;
+  out.textContent = error.stack || String(error);
+}
+</script>
+</body>
+</html>

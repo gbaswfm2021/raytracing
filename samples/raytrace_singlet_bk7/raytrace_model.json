@@ -1,0 +1,32 @@
+{
+  "application": "raytrace",
+  "modelFormat": "raytrace-model/2",
+  "x-fullmeta-schema": "../../applications/raytrace/raytrace.schema.json",
+  "metadata": {
+    "id": "raytrace_singlet_bk7",
+    "name": "BK7 singlet (f ≈ 100 mm)",
+    "description": "Equiconvex N-BK7 singlet, R = ±103.4 mm, 5 mm thick, traced at F, d and C. Its F–C focal shift is ≈ f/νd ≈ 1.6 mm."
+  },
+  "model": {
+    "materials": [
+      { "id": "air", "name": "Air (n = 1, glass-catalogue convention)", "formula": "constant", "n": 1.0,
+        "reference": "Glass catalogue indices (SCHOTT) are relative to air, so lens design normally treats air as n = 1." },
+      { "id": "N-BK7", "name": "SCHOTT N-BK7", "formula": "sellmeier",
+        "B": [1.03961212, 0.231792344, 1.01046945], "C": [0.00600069867, 0.0200179144, 103.560653],
+        "validRangeUm": [0.3, 2.5], "reference": "SCHOTT optical glass data sheet N-BK7 (nd = 1.51680, vd = 64.17). Relative to air." }
+    ],
+    "wavelengths": [
+      { "id": "F", "label": "F", "lambdaNm": 486.1327, "weight": 1 },
+      { "id": "d", "label": "d", "lambdaNm": 587.5618, "weight": 1 },
+      { "id": "C", "label": "C", "lambdaNm": 656.2725, "weight": 1 }
+    ],
+    "source": { "kind": "collimated", "x": -20, "y": 0, "angleDeg": 0, "width": 20, "rayCount": 11,
+      "spectrum": { "kind": "wavelengths", "temperatureK": 5778, "minNm": 380, "maxNm": 780, "bins": 16 } },
+    "surfaces": [
+      { "id": "s1", "name": "Front face", "x": 0, "radius": 103.4, "semiAperture": 12.5, "materialAfter": "N-BK7" },
+      { "id": "s2", "name": "Back face", "x": 5, "radius": -103.4, "semiAperture": 12.5, "materialAfter": "air" }
+    ],
+    "screen": { "x": 103, "height": 30 },
+    "settings": { "ambientMaterial": "air", "primaryWavelength": "d" }
+  }
+}

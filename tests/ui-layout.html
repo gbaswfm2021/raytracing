@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Raytrace layout check</title></head>
+<body>
+<!-- Checks the app layout in the real editor: Settings column right of the tree, results under the graphics, and
+     both splitters resize. Headless: msedge --headless=new --window-size=1600,1000 --virtual-time-budget=60000 --dump-dom <this page> -->
+<pre id="summary">running</pre>
+<iframe id="editor" style="width:1500px;height:900px"></iframe>
+<script>
+const frame = document.getElementById("editor"), summary = document.getElementById("summary");
+frame.src = "/platform/loader.html?model=" + encodeURIComponent("projects/raytrace_achromat_doublet/raytrace_model.json");
+frame.onload = () => setTimeout(() => {
+  const doc = frame.contentDocument, win = frame.contentWindow;
+  const box = sel => doc.querySelector(sel)?.getBoundingClientRect();
+  const drag = (el, dx, dy) => {
+    const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const fire = (type, cx, cy) => el.dispatchEvent(new win.PointerEvent(type, { clientX: cx, clientY: cy, button: 0, buttons: 1, bubbles: true, pointerId: 1 }));
+    fire("pointerdown", x, y); fire("pointermove", x + dx, y + dy); fire("pointerup", x + dx, y + dy);
+  };
+  const tree = box(".workspace > .tree"), editor = box(".workspace > .editor"), graphics = box(".graphics-panel"), results = box(".rt-results-panel");
+  const checks = [];
+  checks.push(["Settings column between tree and graphics", tree && editor && graphics && editor.left >= tree.right && editor.right <= graphics.left && Math.abs(editor.top - graphics.top) < 4]);
+  checks.push(["results panel under the graphics", results && results.top >= graphics.bottom && Math.abs(results.left - graphics.left) < 2]);
+  const w0 = editor.width;
+  drag(doc.querySelector(".rt-settings-splitter"), 120, 0);
+  const w1 = box(".workspace > .editor").width;
+  checks.push([`Settings splitter widens Settings (${Math.round(w0)} → ${Math.round(w1)} px)`, w1 - w0 > 100]);
+  const h0 = box(".graphics-panel").height;
+  try { drag(doc.querySelector("#right-splitter"), 0, -150); } catch (e) { checks.push(["right splitter drag threw: " + e.message, false]); }
+  const h1 = box(".graphics-panel").height, r1 = box(".rt-results-panel").height;
+  checks.push([`graphics/results splitter (graphics ${Math.round(h0)} → ${Math.round(h1)} px, results ${Math.round(results.height)} → ${Math.round(r1)} px)`, h0 - h1 > 100 && r1 > results.height]);
+  const failed = checks.filter(c => !c[1]);
+  summary.textContent = (failed.length ? "FAIL" : "PASS") + "\n" + checks.map(c => `${c[1] ? "ok  " : "BAD "} ${c[0]}`).join("\n");
+}, 15000);
+</script>
+</body>
+</html>

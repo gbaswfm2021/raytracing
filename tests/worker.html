@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Raytrace worker check</title></head>
+<body>
+<!-- Checks that js/trace3d-worker.js loads as a module worker and returns a result. The top-level await keeps
+     the page loading until the worker answers (or 10 s pass), so headless --dump-dom sees the outcome. -->
+<pre id="summary">running</pre>
+<script type="module">
+const summary = document.getElementById("summary");
+const model = await (await fetch("../samples/raytrace3d_singlet/raytrace_model.json", { cache: "no-store" })).json();
+const started = performance.now();
+const outcome = await new Promise(resolve => {
+  const worker = new Worker(new URL("../js/trace3d-worker.js", import.meta.url), { type: "module" });
+  worker.onerror = event => resolve(`ERROR worker failed to load: ${event.message || "unknown"}`);
+  worker.onmessage = event => {
+    if (event.data?.ready) { worker.postMessage({ id: 1, document: model, options: { rayCountCap: 2000 } }); return; }
+    const { result, error } = event.data;
+    resolve(error ? `ERROR ${error}` : `PASS worker returned ${result.totals.raysTraced} rays, emitted ${result.totals.emittedW.toFixed(6)} W in ${Math.round(performance.now() - started)} ms`);
+  };
+});
+summary.textContent = outcome;
+</script>
+</body>
+</html>
