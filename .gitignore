@@ -6,3 +6,6 @@
 
 # Local diagnostic logs
 *.log
+
+# Local, untracked notes for Claude (personal / machine-specific)
+CLAUDE.local.md
