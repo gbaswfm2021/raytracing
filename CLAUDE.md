@@ -6,20 +6,29 @@
 - I'm a researcher at the University of Exeter. My supervisor is building **FullMeta**, an open-source scientific
   simulation platform meant to replace paid tools (COMSOL, Ansys, Zemax-style ray tracing). It started after COMSOL
   quoted us $7000 for an extra module. I'm helping by building new physics modules, starting with **ray tracing**.
-- GitHub user: `arminhgh`. This folder (`applications\raytrace`) is a git repo for my module only
+- GitHub user: `arminhgh`. This folder (`applications\raytracing`) is a git repo for my module only
   (private repo `arminhgh/fullmeta-raytrace`).
 - **Supervisor's repos (2026-11-14)**, cloned read-only into `C:\Users\armin\source\fullmeta\`: GitHub org
   `FullMeta-Project` (public `platform` snapshot = Store package JS + docs; kernel/WASM still compiled only) and private
   `gbaswfm2021/FullMeta` (workspace root, `applications/inventory.json`), `gbaswfm2021/fem`,
   `gbaswfm2021/raytracing`. **The `raytracing` repo is only a simple thin-lens demo** the supervisor made to show how an
-  app folder is downloaded and dropped into `applications/`. **He wants this module (`raytrace`) to be the ray-tracing
-  app in FullMeta.** How it gets into `gbaswfm2021/raytracing` / the Help download (id rename? push access?) is still
-  to be agreed with him.
+  app folder is downloaded and dropped into `applications/`. **He wants this module to be the ray-tracing
+  app in FullMeta.**
+- **App id is `raytracing` since 2026-11-14 (Armin's choice; was `raytrace`)**, so this module replaces the demo.
+  Renamed: folder, `catalog.json` id, `application` field/const, schema files (`raytracing.schema.json`,
+  `raytracing3d.schema.json`) and their `$id`, schema paths, route `/api/raytracing/trace`. Deliberately kept: the
+  data-format names (`raytrace-model/2`, `raytrace3d-model/1`, `raytrace-result/2`, `raytrace3d-result/1`,
+  `raytrace-material-library/1`), `raytrace_model.json`, `raytrace2d.exe`, example ids, internal JS names, and the
+  GitHub repo name `arminhgh/fullmeta-raytrace`. Still to agree with the supervisor: how this gets into
+  `gbaswfm2021/raytracing` (push access, or he pulls from this repo).
+- The demo app and its example project were moved (not deleted) to
+  `C:\Users\armin\source\fullmeta-workspace-backup\` (`raytracing-demo-app`, `raytracing-lens-example-project`).
+  The demo's source is also in `gbaswfm2021/raytracing` and the read-only clone.
 
 ## Setup on this PC (since 2026-11-14)
 - FullMeta is the **Microsoft Store app**. Its workspace is `C:\Users\armin\OneDrive\Documents\FullMeta`, served at
   http://127.0.0.1:8766/ (kernel `--root` is that folder). Platform files live in its `platform\`.
-- **This repo now lives in `OneDrive\Documents\FullMeta\applications\raytrace\`** (cloned from GitHub; the kernel
+- **This repo now lives in `OneDrive\Documents\FullMeta\applications\raytracing\`** (cloned from GitHub; the kernel
   refuses links, so it must physically be there). The old copy in `C:\Users\armin\AppData\Local\Programs\FullMeta`
   (pre-Store install, no `platform\` any more) is obsolete; don't work there.
 - New app packaging: no central catalog. Each app folder has its own `catalog.json` (`fullmeta-application/1`, folder
@@ -32,7 +41,7 @@
 - The solver exe is a build output, not stored in git. Rebuild it with:
   `powershell -ExecutionPolicy Bypass -File solver\build.ps1`  (creates `.runtime\raytrace2d.exe`)
 - **Blocker found 2026-11-07: Windows Smart App Control (enforce mode) blocks `raytrace2d.exe`.** The build works, but
-  the unsigned exe won't run, either from the command line or through the kernel (`POST /api/raytrace/trace` → 503
+  the unsigned exe won't run, either from the command line or through the kernel (`POST /api/raytracing/trace` → 503
   "An Application Control policy has blocked this file (os error 4551)"). The "Run native solver" panel shows the same
   error. The app, tree and live JS preview work (sample best focus 51.901 mm). Fixes are Armin's call: turn off Smart
   App Control (Windows Security → App & browser control; it can't be turned back on without a Windows reset) or sign
@@ -51,13 +60,13 @@
 - No licence file for FullMeta itself yet. The bundled mesher Gmsh is GPL, which affects the licence choice.
 
 ## The ray-tracing module (current state: 2D with full dispersion, Stage 1 implemented 2026-11-07)
-- `raytrace.schema.json`: `raytrace-model/2` = materials, wavelengths, source (collimated/point, rays per
+- `raytracing.schema.json`: `raytrace-model/2` = materials, wavelengths, source (collimated/point, rays per
   wavelength), surfaces (vertex x, radius, semi-aperture, `materialAfter`), screen, settings (`ambientMaterial`,
   `primaryWavelength`). It still accepts `raytrace-model/1` (`nAfter`, `ambientIndex`). Surface → material and
   settings → wavelength use `x-fullmeta-modelReference` (renders as a dropdown). Tree context menus use `catalog`
   entries that `package.js` supplies (`treeActionCatalogs` and its own `treeActionPlans` with the `libraryMaterial` and
   `spectralLine` factories). Runtime: `modelFile raytrace_model.json`, external program `raytraceSolver` →
-  `.runtime/raytrace2d.exe --trace`, routes `projectCreate` and `traceRun` (POST `/api/raytrace/trace`,
+  `.runtime/raytrace2d.exe --trace`, routes `projectCreate` and `traceRun` (POST `/api/raytracing/trace`,
   `kernel.program.json`, json-stdio). Result format `raytrace-result/2`. Details in README and
   `docs/stage1-dispersion-proposal.md` (see "Implementation notes").
 - `materials/library.json` + `js/materials.js`: dispersion formulas and the material library.
@@ -66,7 +75,7 @@
   (`templates/lens-2d.json`).
 - `solver/RayTrace2D.cs`: native C# solver, built with the .NET Framework `csc.exe` built into Windows. The old PC had
   no Rust, Python or Node.
-- Registered by its own `catalog.json` (`id: raytrace`, `runtimePackage: true`, version 0.3.0). Example projects in
+- Registered by its own `catalog.json` (`id: raytracing`, renamed from `raytrace` on 2026-11-14, `runtimePackage: true`, version 0.3.0). Example projects in
   `examples/`.
 - **Verified on the Store platform (2026-11-14):** app card with both profiles and 7 examples; creating projects from
   examples works; 2D biconvex (best focus 51.901 mm) and 3D sunlight prism (full trace 30,000 rays, energy balance
@@ -105,7 +114,7 @@
    and JS ↔ C# agreement to ~1e-9. Click through the material dropdown and the context menus by hand (only their
    wiring is tested). Not committed yet (Stage 1 and Stage 2 phase 3a are both uncommitted).
 2. **Stage 2 – 3D non-sequential (TracePro-style), phase 3a implemented 2026-11-07.** Armin chose: non-sequential
-   engine, inside this app (second schema `raytrace3d.schema.json`, `package.js` switches on `modelFormat`), JS engine
+   engine, inside this app (second schema `raytracing3d.schema.json`, `package.js` switches on `modelFormat`), JS engine
    only for now (C# later), own WebGL viewer (`scene-view` is Canvas 2D only). See `docs/stage2-3d-proposal.md`
    (implementation notes at the end). 51/51 checks pass: 3D ↔ 2D agree to 4e-15 mm, lensmaker, parabolic mirror,
    Fresnel/TIR, energy balance, irradiance, inverse-square law. Three 3D samples copied into `projects/`.

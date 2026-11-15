@@ -9,7 +9,7 @@
 // Reads raytrace-model/2 (materials + wavelengths) and raytrace-model/1 (nAfter / ambientIndex) and writes
 // raytrace-result/2. Mirrors js/trace2d.js + js/materials.js (same algorithm, same output); keep them in sync.
 //
-// Build: applications/raytrace/solver/build.ps1 (uses the .NET Framework csc.exe shipped with Windows).
+// Build: applications/raytracing/solver/build.ps1 (uses the .NET Framework csc.exe shipped with Windows).
 
 using System;
 using System.Collections;

@@ -52,10 +52,10 @@ export async function runEditorChecks(check) {
     check(`schema validation: ${path}`, list.length === 0, { issues: list.slice(0, 5) });
   }
 
-  // ---- 3D project (raytrace3d.schema.json) ----
+  // ---- 3D project (raytracing3d.schema.json) ----
   const splitter = await getJson("examples/raytrace3d_beam_splitter/raytrace_model.json");
   const pkg3 = await createApplicationPackage({ model: splitter, modelLocation: new URL("../../projects/raytrace3d_beam_splitter/raytrace_model.json", base) });
-  check("3D package uses the 3D schema", pkg3.modelSchema.$id.endsWith("raytrace3d.schema.json") && pkg3.launcher.profiles.length === 2, { id: pkg3.modelSchema.$id });
+  check("3D package uses the 3D schema", pkg3.modelSchema.$id.endsWith("raytracing3d.schema.json") && pkg3.launcher.profiles.length === 2, { id: pkg3.modelSchema.$id });
   const plans3 = pkg3.treeActionPlans({ model: splitter, catalogs: pkg3.treeActionCatalogs().catalogs,
     cloneItem: item => ({ ...structuredClone(item), id: `${item.id}_copy` }),   // the editor passes cloneWithUniqueIds
     makeId: stem => `${stem}_${++counter}`, makeName: (_path, name) => name });
@@ -89,7 +89,7 @@ export async function runEditorChecks(check) {
   check("2D item menu has delete", twoD.includes("delete") && twoD.includes("duplicate-item"), { twoD });
 
   const created = pkg3.createModelDocument({ modelId: "new3d", profileId: "nonseq-3d", folder: "projects/new3d" });
-  check("Create project: 3D profile", created.modelFormat === "raytrace3d-model/1" && created["x-fullmeta-schema"] === "../../applications/raytrace/raytrace3d.schema.json",
+  check("Create project: 3D profile", created.modelFormat === "raytrace3d-model/1" && created["x-fullmeta-schema"] === "../../applications/raytracing/raytracing3d.schema.json",
     { modelFormat: created.modelFormat, schema: created["x-fullmeta-schema"] });
 
   configureModelSchema(pkg3.modelSchema, pkg3.schemaDocuments || []);

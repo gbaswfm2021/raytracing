@@ -1,6 +1,6 @@
-# Builds applications/raytrace/.runtime/raytrace2d.exe with the .NET Framework C# compiler
+# Builds applications/raytracing/.runtime/raytrace2d.exe with the .NET Framework C# compiler
 # that ships with Windows (no Visual Studio, Rust, or Python needed).
-#   powershell -ExecutionPolicy Bypass -File applications\raytrace\solver\build.ps1
+#   powershell -ExecutionPolicy Bypass -File applications\raytracing\solver\build.ps1
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $csc = Get-ChildItem "$env:WINDIR\Microsoft.NET\Framework64\v4*\csc.exe" | Sort-Object FullName | Select-Object -Last 1

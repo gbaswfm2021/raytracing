@@ -1,13 +1,13 @@
-// FullMeta "raytrace" application package.
+// FullMeta "raytracing" application package.
 //
 // Strategy: reuse the platform's generic schema-project editor (tree, settings forms, save,
-// validate are all driven by raytrace.schema.json) and add the ray-tracing specific parts:
+// validate are all driven by raytracing.schema.json) and add the ray-tracing specific parts:
 //   * renderPreview      -> optical layout + live rays (js/preview.js, js/trace2d.js)
 //   * mountEditorPanels  -> "Run native solver" panel (js/run-panel.js) calling the kernel
 //   * launcher profile + createModelDocument so "Create project" works from the Workspace page
 //   * tree catalogs      -> "Add material from library" (materials/library.json) and spectral-line presets
 //   * editor layout      -> Settings in its own column next to the tree, results under the graphics (js/layout.js)
-//   * 3D projects (modelFormat raytrace3d-model/1, raytrace3d.schema.json) -> js/app3d.js: WebGL view,
+//   * 3D projects (modelFormat raytrace3d-model/1, raytracing3d.schema.json) -> js/app3d.js: WebGL view,
 //     trace in a background worker (js/trace3d-worker.js -> js/trace3d.js), results panel
 import { createSchemaProjectPackage } from "../../platform/ui/widgets/model-editor/schema-project-package.js";
 import { createSchemaTreeActionPlans } from "../../platform/ui/widgets/tree/widget.js";
@@ -58,7 +58,7 @@ async function loadJson(url, what) {
 }
 const loadTemplate = () => loadJson(templateUrl, "project template");
 
-/** 3D non-sequential projects use raytrace3d.schema.json and the 3D editor integration (js/app3d.js). */
+/** 3D non-sequential projects use raytracing3d.schema.json and the 3D editor integration (js/app3d.js). */
 const is3dModel = document => String(document?.modelFormat || "").startsWith("raytrace3d-model/");
 
 export async function createApplicationPackage({ model, modelLocation } = {}) {
@@ -156,7 +156,7 @@ export async function createApplicationPackage({ model, modelLocation } = {}) {
       const threeD = profileId === "nonseq-3d";
       const document = structuredClone(threeD ? template3d : template);
       const depth = String(folder || "projects/x").split("/").filter(Boolean).length;
-      document["x-fullmeta-schema"] = `${"../".repeat(depth)}applications/raytrace/${threeD ? "raytrace3d" : "raytrace"}.schema.json`;
+      document["x-fullmeta-schema"] = `${"../".repeat(depth)}applications/raytracing/${threeD ? "raytracing3d" : "raytracing"}.schema.json`;
       document.metadata = { ...document.metadata, id: modelId, name: modelId };
       return document;
     },

@@ -1,7 +1,7 @@
 {
-  "application": "raytrace",
+  "application": "raytracing",
   "modelFormat": "raytrace-model/2",
-  "x-fullmeta-schema": "../../applications/raytrace/raytrace.schema.json",
+  "x-fullmeta-schema": "../../applications/raytracing/raytracing.schema.json",
   "metadata": {
     "id": "raytrace_singlet_bk7",
     "name": "BK7 singlet (f ≈ 100 mm)",

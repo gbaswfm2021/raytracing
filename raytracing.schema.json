@@ -1,7 +1,7 @@
 {
-  "$id": "https://fullmeta.local/applications/raytrace/raytrace.schema.json",
+  "$id": "https://fullmeta.local/applications/raytracing/raytracing.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "application": "raytrace",
+  "application": "raytracing",
   "title": "Ray Tracing",
   "description": "2D geometric ray tracing through sequential refracting surfaces (lenses), with dispersive materials and multiple wavelengths.",
   "type": "object",
@@ -33,7 +33,7 @@
         "output": { "contentType": "application/json", "fields": [["id", "Created project ID"], ["folder", "Project folder"], ["file", "Model filename"]] }
       },
       "traceRun": {
-        "route": "/api/raytrace/trace",
+        "route": "/api/raytracing/trace",
         "method": "POST",
         "handler": "kernel.program.json",
         "externalProgram": { "registryId": "raytraceSolver", "entry": "--trace", "protocol": "json-stdio" },
@@ -43,7 +43,7 @@
     }
   },
   "properties": {
-    "application": { "const": "raytrace", "title": "Application" },
+    "application": { "const": "raytracing", "title": "Application" },
     "modelFormat": {
       "type": "string", "title": "Model format", "enum": ["raytrace-model/2", "raytrace-model/1"], "default": "raytrace-model/2",
       "description": "raytrace-model/2 adds materials and wavelengths. raytrace-model/1 projects (nAfter, ambientIndex) still open and trace at the d line."

@@ -8,25 +8,26 @@ changes**: the kernel launches the solver through the generic `kernel.program.js
 
 | File | Role |
 |---|---|
-| `raytrace.schema.json` | Model definition (materials, wavelengths, source, surfaces, screen, settings), model tree and context menus, runtime contract: storage, registered solver exe, editor API routes |
+| `raytracing.schema.json` | Model definition (materials, wavelengths, source, surfaces, screen, settings), model tree and context menus, runtime contract: storage, registered solver exe, editor API routes |
 | `package.js` | Application package. Wraps the platform's generic schema-project editor and adds the preview, Run panel, launcher profile and the "Add material from library" / spectral-line tree catalogs |
 | `schema-documents.js` | Schema loader required by the catalog (records the active schema URL) |
 | `materials/library.json` | Shipped material library (air, Ciddor air, N-BK7, N-SF11, fused silica, CaF2), each with its data source |
 | `js/materials.js` | Dispersion formulas, Abbe numbers, wavelength → display colour |
 | `js/trace2d.js` | In-browser tracer used for the live preview (same algorithm and output as the solver) |
 | `js/preview.js` | Graphics pane: lens bodies, surfaces, screen, rays coloured by wavelength, a focus marker and a stats line per wavelength |
-| `js/run-panel.js` | "Run native solver" panel → `POST /api/raytrace/trace` → kernel → `raytrace2d.exe --trace`; per-wavelength table, materials with Abbe numbers, chromatic focal shift |
+| `js/run-panel.js` | "Run native solver" panel → `POST /api/raytracing/trace` → kernel → `raytrace2d.exe --trace`; per-wavelength table, materials with Abbe numbers, chromatic focal shift |
 | `solver/RayTrace2D.cs` | Native solver (C#). Reads model JSON on stdin and writes `raytrace-result/2` JSON on stdout |
 | `solver/build.ps1` | Builds `.runtime/raytrace2d.exe` with the csc.exe that ships with Windows |
 | `templates/lens-2d.json` | Starting model for Workspace → Create project (N-BK7 biconvex lens, F/d/C) |
+| `LICENSE` | MIT License, (c) 2026 Armin Hosseinghorbani |
 | `catalog.json` | Application descriptor (`fullmeta-application/1`) that makes FullMeta discover the app |
 | `examples/` | Example projects, offered by the app card's **Examples** button (copied into `projects/<name>/`) |
 | `tests/run.html`, `tests/*.js` | Browser checks: library data, tracer acceptance checks, editor wiring |
 
 ## Install
 
-Copy (or clone) this folder to `applications/raytrace/` in a FullMeta workspace and refresh the launcher. The folder
-name must stay `raytrace` (it must match `id` in `catalog.json`). Use **Examples** on the Ray Tracing card to create
+Copy (or clone) this folder to `applications/raytracing/` in a FullMeta workspace and refresh the launcher. The folder
+name must stay `raytracing` (it must match `id` in `catalog.json`). Use **Examples** on the Ray Tracing card to create
 a project from one of the examples.
 
 Examples:
@@ -71,14 +72,14 @@ distances from a lens.
 ## Build / test
 
 ```
-powershell -ExecutionPolicy Bypass -File applications\raytrace\solver\build.ps1
-applications\raytrace\.runtime\raytrace2d.exe --trace projects\raytrace_achromat_doublet\raytrace_model.json
+powershell -ExecutionPolicy Bypass -File applications\raytracing\solver\build.ps1
+applications\raytracing\.runtime\raytrace2d.exe --trace projects\raytrace_achromat_doublet\raytrace_model.json
 ```
 
-The JS checks run in any browser at http://127.0.0.1:8766/applications/raytrace/tests/run.html, or headless:
+The JS checks run in any browser at http://127.0.0.1:8766/applications/raytracing/tests/run.html, or headless:
 
 ```
-msedge --headless=new --user-data-dir=<temp dir> --virtual-time-budget=40000 --dump-dom http://127.0.0.1:8766/applications/raytrace/tests/run.html
+msedge --headless=new --user-data-dir=<temp dir> --virtual-time-budget=40000 --dump-dom http://127.0.0.1:8766/applications/raytracing/tests/run.html
 ```
 
 `#summary` reads `PASS n/n`. Stage 1 numbers (JS tracer): singlet F–C paraxial focal shift −1.545 mm
@@ -87,12 +88,12 @@ msedge --headless=new --user-data-dir=<temp dir> --virtual-time-budget=40000 --d
 
 ## 3D non-sequential ray tracing (`raytrace3d-model/1`)
 
-The same app opens 3D projects whose `modelFormat` is `raytrace3d-model/1` (schema `raytrace3d.schema.json`).
+The same app opens 3D projects whose `modelFormat` is `raytrace3d-model/1` (schema `raytracing3d.schema.json`).
 Workspace → Create project → profile "3D non-sequential".
 
 | File | Role |
 |---|---|
-| `raytrace3d.schema.json` | 3D model: materials, wavelengths, surface properties, objects, sources, analyses, settings; tree menus (Add Lens / Block / Cylinder / Sphere / Plate, sources, irradiance maps, surface properties, library materials) |
+| `raytracing3d.schema.json` | 3D model: materials, wavelengths, surface properties, objects, sources, analyses, settings; tree menus (Add Lens / Block / Cylinder / Sphere / Plate, sources, irradiance maps, surface properties, library materials) |
 | `js/trace3d.js` | Engine: exact analytic faces (conic caps, cylinders, planes, spheres, convex polygons for prisms), continuous source spectra (blackbody / table, per-ray wavelength) and beam divergence, object placement (position + rotation X→Y→Z), Fresnel / mirror / absorber / A-R-T table surfaces, split or Monte Carlo ray handling, seeded RNG (xoshiro128**), irradiance maps, flux report |
 | `js/trace3d-worker.js` | Runs the engine in a background worker |
 | `js/view3d.js` | Self-contained WebGL viewer: semi-transparent shaded solids, rays coloured by wavelength (opacity by flux), orbit / pan / zoom |

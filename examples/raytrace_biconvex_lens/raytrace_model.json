@@ -1,7 +1,7 @@
 {
-  "application": "raytrace",
+  "application": "raytracing",
   "modelFormat": "raytrace-model/1",
-  "x-fullmeta-schema": "../../applications/raytrace/raytrace.schema.json",
+  "x-fullmeta-schema": "../../applications/raytracing/raytracing.schema.json",
   "metadata": {
     "id": "raytrace_biconvex_lens",
     "name": "Biconvex lens",

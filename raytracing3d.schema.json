@@ -1,7 +1,7 @@
 {
-  "$id": "https://fullmeta.local/applications/raytrace/raytrace3d.schema.json",
+  "$id": "https://fullmeta.local/applications/raytracing/raytracing3d.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "application": "raytrace",
+  "application": "raytracing",
   "title": "Ray Tracing 3D",
   "description": "3D non-sequential ray tracing: solid lenses, blocks, cylinders, spheres and plates with Fresnel, mirror, absorbing and coated surfaces; collimated and point sources; irradiance maps and a flux report.",
   "type": "object",
@@ -35,7 +35,7 @@
     }
   },
   "properties": {
-    "application": { "const": "raytrace", "title": "Application" },
+    "application": { "const": "raytracing", "title": "Application" },
     "modelFormat": { "const": "raytrace3d-model/1", "type": "string", "title": "Model format" },
     "x-fullmeta-schema": { "type": "string", "title": "Schema" },
     "metadata": {

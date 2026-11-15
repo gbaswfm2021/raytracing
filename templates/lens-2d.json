@@ -1,7 +1,7 @@
 {
-  "application": "raytrace",
+  "application": "raytracing",
   "modelFormat": "raytrace-model/2",
-  "x-fullmeta-schema": "../raytrace.schema.json",
+  "x-fullmeta-schema": "../raytracing.schema.json",
   "metadata": {
     "id": "template",
     "name": "2D lens",

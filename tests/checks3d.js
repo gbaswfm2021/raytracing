@@ -106,7 +106,7 @@ export async function runChecks3d(check) {
   // 7. Irradiance of a uniform collimated beam: 1 W over Ø20 mm → 1/(100π) W/mm² (Monte Carlo, ±3 %).
   {
     const model = {
-      application: "raytrace", modelFormat: "raytrace3d-model/1",
+      application: "raytracing", modelFormat: "raytrace3d-model/1",
       model: {
         materials: [{ id: "air", formula: "constant", n: 1 }], wavelengths: [{ id: "d", lambdaNm: 587.5618, weight: 1 }],
         surfaceProperties: [{ id: "black", kind: "absorber" }],
@@ -225,7 +225,7 @@ export async function runChecks3d(check) {
 
   // 12. Overlap warning: overlapping blocks warn, a cemented doublet does not.
   {
-    const base3 = { application: "raytrace", modelFormat: "raytrace3d-model/1",
+    const base3 = { application: "raytracing", modelFormat: "raytrace3d-model/1",
       model: { materials: [{ id: "air", formula: "constant", n: 1 }, { id: "g", formula: "constant", n: 1.5 }, { id: "f", formula: "constant", n: 1.7 }],
         sources: [], analyses: [], settings: { ambientMaterial: "air" } } };
     const blocks = clone(base3);
