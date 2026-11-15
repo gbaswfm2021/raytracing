@@ -1,1 +1,8 @@
-.runtime/
+# Generated runtime build output
+/.runtime/
+/.build/
+/.build-environment/
+/target/
+
+# Local diagnostic logs
+*.log
