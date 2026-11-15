@@ -4,6 +4,14 @@ A FullMeta application package for 2D geometric (sequential) ray tracing through
 materials and multiple wavelengths (Stage 1). It plugs into the existing platform **without kernel source
 changes**: the kernel launches the solver through the generic `kernel.program.json` handler declared in the schema.
 
+## Authors
+
+Developed by **Armin Hosseinghorbani** ([@arminhgh](https://github.com/arminhgh)), University of Exeter, as the
+ray-tracing application for [FullMeta](https://github.com/FullMeta-Project). FullMeta platform by Jensen Li
+([@gbaswfm2021](https://github.com/gbaswfm2021)).
+
+Released under the MIT License (see `LICENSE`).
+
 ## Files
 
 | File | Role |
