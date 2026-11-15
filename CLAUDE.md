@@ -19,8 +19,16 @@
   `raytracing3d.schema.json`) and their `$id`, schema paths, route `/api/raytracing/trace`. Deliberately kept: the
   data-format names (`raytrace-model/2`, `raytrace3d-model/1`, `raytrace-result/2`, `raytrace3d-result/1`,
   `raytrace-material-library/1`), `raytrace_model.json`, `raytrace2d.exe`, example ids, internal JS names, and the
-  GitHub repo name `arminhgh/fullmeta-raytrace`. Still to agree with the supervisor: how this gets into
-  `gbaswfm2021/raytracing` (push access, or he pulls from this repo).
+  GitHub repo name `arminhgh/fullmeta-raytrace`.
+- **Publishing (since 2026-11-15):** Armin has write access to `gbaswfm2021/raytracing` (git remote `supervisor`).
+  Jensen agreed this app is its `main` (merged with `-s ours`, demo history kept as a parent). Push to both remotes.
+  Releases: FullMeta's Help → recommended applications reads `gbaswfm2021/FullMeta` `applications/inventory.json`, lists
+  the repo's **GitHub Releases** (non-draft; a bare tag is not enough) and installs the tag's source zip (top folder
+  renamed to `raytracing`). So for a new version: bump `catalog.json` `version`, commit, push, push tag `vX.Y.Z`, then
+  create the Release on github.com from that tag (no `gh` CLI on this PC). Earlier demo releases: v1.0.0, v1.0.1.
+- **Native engine wanted:** Jensen wants the compute-heavy tracing in native binaries, following the Gerchberg-Saxton
+  app (`gs-rust` crate + `runtime-build.json`, prebuilt `.runtime/x86_64-pc-windows-gnu/release/gs-engine.exe` committed).
+  Smart App Control lets the Store-shipped unsigned `gs-engine.exe` run but blocks locally compiled exes.
 - The demo app and its example project were moved (not deleted) to
   `C:\Users\armin\source\fullmeta-workspace-backup\` (`raytracing-demo-app`, `raytracing-lens-example-project`).
   The demo's source is also in `gbaswfm2021/raytracing` and the read-only clone.
@@ -75,7 +83,7 @@
   (`templates/lens-2d.json`).
 - `solver/RayTrace2D.cs`: native C# solver, built with the .NET Framework `csc.exe` built into Windows. The old PC had
   no Rust, Python or Node.
-- Registered by its own `catalog.json` (`id: raytracing`, renamed from `raytrace` on 2026-11-14, `runtimePackage: true`, version 0.3.0). Example projects in
+- Registered by its own `catalog.json` (`id: raytracing`, renamed from `raytrace` on 2026-11-14, `runtimePackage: true`, version 2.0.0). Example projects in
   `examples/`.
 - **Verified on the Store platform (2026-11-14):** app card with both profiles and 7 examples; creating projects from
   examples works; 2D biconvex (best focus 51.901 mm) and 3D sunlight prism (full trace 30,000 rays, energy balance
