@@ -3,7 +3,7 @@
   "format": "fullmeta-application/1",
   "id": "raytracing",
   "name": "Raytracing",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "schema": "applications/raytracing/raytracing.schema.json",
   "runtimePackage": true,
   "schemaLoader": "applications/raytracing/schema-documents.js",
